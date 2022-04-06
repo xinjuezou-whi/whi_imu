@@ -65,7 +65,7 @@ namespace whi_motion_interface
         srv_reset_ = std::make_unique<ros::ServiceServer>(node_handle_->advertiseService("imu_reset", &Imu::onServiceReset, this));
 
         // spinner
-        node_handle_->param("/NaviBOT/hardware_interface/loop_hz", loop_hz_, 10.0);
+        node_handle_->param("/whi_imu/loop_hz", loop_hz_, 10.0);
         ros::Duration updateFreq = ros::Duration(1.0 / loop_hz_);
         non_realtime_loop_ = std::make_unique<ros::Timer>(node_handle_->createTimer(updateFreq, std::bind(&Imu::update, this, std::placeholders::_1)));
     }
