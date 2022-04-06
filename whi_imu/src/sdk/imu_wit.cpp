@@ -205,7 +205,6 @@ void ImuWit::init(const std::string& Unlock, const std::string& ResetYaw, bool W
 	try
 	{
 		serial_inst_ = std::make_unique<serial::Serial>(serial_port_, baudrate_, serial::Timeout::simpleTimeout(500));
-		serial_inst_->open();
 	}
 	catch (serial::IOException& e)
 	{
