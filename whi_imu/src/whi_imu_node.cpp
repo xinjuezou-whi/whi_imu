@@ -19,6 +19,8 @@ Changelog:
 
 #include "whi_imu/whi_imu.h"
 
+#define ASYNC 1
+
 int main(int argc, char** argv)
 {
 	/// node version and copyright announcement
@@ -36,7 +38,7 @@ int main(int argc, char** argv)
 	// NOTE: We run the ROS loop in a separate thread as external calls such as
 	// service callbacks to load controllers can block the (main) control loop
 #if ASYNC
-	ros::AsyncSpinner spinner(4);
+	ros::AsyncSpinner spinner(0);
 	spinner.start();
 	ros::waitForShutdown();
 #else
