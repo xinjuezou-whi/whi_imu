@@ -25,7 +25,7 @@ namespace whi_motion_interface
 	class Imu
 	{
     public:
-        enum Type { WIT = 0, TYPE_SUM };
+        enum Type { WIT_JY61P = 0, TYPE_SUM };
         static const char* type_str[TYPE_SUM];
 
     public:

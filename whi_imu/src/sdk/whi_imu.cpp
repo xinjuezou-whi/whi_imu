@@ -16,7 +16,7 @@ All text above must be included in any redistribution.
 
 namespace whi_motion_interface
 {
-    const char* Imu::type_str[TYPE_SUM] = { "wit" };
+    const char* Imu::type_str[TYPE_SUM] = { "jy61p" };
 
     Imu::Imu(std::shared_ptr<ros::NodeHandle>& NodeHandle)
         : node_handle_(NodeHandle)
@@ -49,15 +49,20 @@ namespace whi_motion_interface
         int packLength = 0;
         std::string unlock;
         std::string resetYaw;
-        node_handle_->param("/whi_imu/hardware_interface/module", module, std::string(type_str[WIT]));
+        bool withMag = false;
+        bool withTemp = false;
+        node_handle_->param("/whi_imu/hardware_interface/module", module, std::string(type_str[WIT_JY61P]));
         node_handle_->param("/whi_imu/hardware_interface/port", port, std::string("/dev/ttyUSB0"));
         node_handle_->param("/whi_imu/hardware_interface/baudrate", baudrate, 9600);
         node_handle_->param("/whi_imu/hardware_interface/pack_length", packLength, 11);
-        node_handle_->param("/whi_imu/hardware_interface/pack_length", unlock, std::string());
-        node_handle_->param("/whi_imu/hardware_interface/pack_length", resetYaw, std::string());
-        if (module == type_str[WIT])
+        node_handle_->param("/whi_imu/hardware_interface/unlock", unlock, std::string());
+        node_handle_->param("/whi_imu/hardware_interface/reset_yaw", resetYaw, std::string());
+        node_handle_->param("/whi_imu/hardware_interface/with_magnetic", withMag, true);
+        node_handle_->param("/whi_imu/hardware_interface/with_temperature", withTemp, false);
+        transform(module.begin(), module.end(), module.begin(), ::tolower);
+        if (module == type_str[WIT_JY61P])
         {
-            imu_inst_ = std::make_unique<ImuWit>(node_handle_, port, baudrate, packLength, unlock, resetYaw);
+            imu_inst_ = std::make_unique<ImuWit>(node_handle_, module, port, baudrate, packLength, unlock, resetYaw, withMag, withTemp);
             imu_inst_->setPublishParams(frameId, dataTopic, magTopic, tempTopic);
         }
 

@@ -19,6 +19,7 @@ All text above must be included in any redistribution.
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/MagneticField.h>
 #include <sensor_msgs/Temperature.h>
+#include <tf2/LinearMath/Quaternion.h>
 #include <cstring>
 
 #define WHI_PI (std::atan(1.0) * 4.0)
@@ -28,11 +29,11 @@ const double ImuWit::CONSTANT_ACC = 16.0 * 9.8 / ImuWit::CONSTANT;
 const double ImuWit::CONSTANT_GYRO = 2000.0 * WHI_PI / (180.0 * ImuWit::CONSTANT);
 const double ImuWit::CONSTANT_ANGLE = WHI_PI / ImuWit::CONSTANT;
 const double ImuWit::CONSTANT_QUATERNION = 1.0 / ImuWit::CONSTANT;
-ImuWit::ImuWit(std::shared_ptr<ros::NodeHandle>& NodeHandle, 
+ImuWit::ImuWit(std::shared_ptr<ros::NodeHandle>& NodeHandle, const std::string& Module,
 	const std::string& SerPort, unsigned int Baudrate, unsigned int PackLength,
 	const std::string& Unlock, const std::string& ResetYaw,
 	bool WithMagnetic/* = true*/, bool WithTemperature/* = false*/)
-	: ImuBase(NodeHandle)
+	: ImuBase(NodeHandle), module_(Module)
 	, serial_port_(SerPort), baudrate_(Baudrate), pack_length_(PackLength)
 {
 	init(Unlock, ResetYaw, WithMagnetic, WithTemperature);
@@ -89,10 +90,24 @@ void ImuWit::read2Publish()
 			imuData.angular_velocity.z = gyro_.z;
 			imuData.linear_acceleration_covariance = { 1e-6, 0, 0, 0, 1e-6, 0, 0, 0, 1e-6 };
 
-			imuData.orientation.x = quaternion_.x;
-			imuData.orientation.y = quaternion_.y;
-			imuData.orientation.z = quaternion_.z;
-			imuData.orientation.w = quaternion_.w;
+			// JY-61/61P has no quartnion output
+			if (module_.find("61") != std::string::npos)
+			{
+				tf2::Quaternion convertQuaternion;
+				convertQuaternion.setRPY(angle_.r, angle_.p, angle_.y);
+				imuData.orientation.x = convertQuaternion.getX();
+				imuData.orientation.y = convertQuaternion.getY();
+				imuData.orientation.z = convertQuaternion.getZ();
+				imuData.orientation.w = convertQuaternion.getW();
+			}
+			else
+			{
+				imuData.orientation.x = quaternion_.x;
+				imuData.orientation.y = quaternion_.y;
+				imuData.orientation.z = quaternion_.z;
+				imuData.orientation.w = quaternion_.w;
+			}
+
 			imuData.orientation_covariance = { 1e-6, 0, 0, 0, 1e-6, 0, 0, 0, 1e-6 };
 
 			pub_data_->publish(imuData);
@@ -191,14 +206,14 @@ void ImuWit::init(const std::string& Unlock, const std::string& ResetYaw, bool W
 	}
 
 	// publisher
-	pub_data_ = std::make_unique<ros::Publisher>(node_handle_->advertise<sensor_msgs::Imu>("imu_data", 10));
+	pub_data_ = std::make_unique<ros::Publisher>(node_handle_->advertise<sensor_msgs::Imu>(data_topic_, 10));
 	if (WithMagnetic)
 	{
-		pub_mag_ = std::make_unique<ros::Publisher>(node_handle_->advertise<sensor_msgs::MagneticField>("mag_data", 10));
+		pub_mag_ = std::make_unique<ros::Publisher>(node_handle_->advertise<sensor_msgs::MagneticField>(mag_topic_, 10));
 	}
 	if (WithTemperature)
 	{
-		pub_temp_ = std::make_unique<ros::Publisher>(node_handle_->advertise<sensor_msgs::Temperature>("temp_data", 10));
+		pub_temp_ = std::make_unique<ros::Publisher>(node_handle_->advertise<sensor_msgs::Temperature>(temp_topic_, 10));
 	}
 
 	// serial
@@ -223,7 +238,7 @@ void ImuWit::fetchData(unsigned char* Data, size_t Length)
 			continue;
 		}
 
-		unsigned int raw[4] = { 0, 0, 0, 0 };
+		int16_t raw[4] = { 0, 0, 0, 0 };
 
 		switch (head[1])
 		{

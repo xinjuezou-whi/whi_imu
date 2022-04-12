@@ -27,7 +27,7 @@ class ImuWit : public ImuBase
 {
 public:
 	ImuWit() = delete;
-	ImuWit(std::shared_ptr<ros::NodeHandle>& NodeHandle, 
+	ImuWit(std::shared_ptr<ros::NodeHandle>& NodeHandle, const std::string& Module,
 		const std::string& SerPort, unsigned int Baudrate, unsigned int PackLength,
 		const std::string& Unlock, const std::string& ResetYaw,
 		bool WithMagnetic = true, bool WithTemperature = false);
@@ -78,6 +78,7 @@ protected:
 	};
 
 protected:
+	std::string module_;
 	std::string serial_port_;
 	unsigned int baudrate_{ 9600 };
 	size_t pack_length_{ 11 };
