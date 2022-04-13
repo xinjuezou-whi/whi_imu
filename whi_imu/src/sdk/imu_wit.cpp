@@ -48,6 +48,8 @@ ImuWit::ImuWit(std::shared_ptr<ros::NodeHandle>& NodeHandle, const std::string& 
 
 ImuWit::~ImuWit()
 {
+	serial_inst_->close();
+
 	if (pub_data_)
 	{
 		pub_data_->shutdown();
