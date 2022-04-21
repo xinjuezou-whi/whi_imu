@@ -178,7 +178,7 @@ void ImuWit::extract2Array(const std::string& Str, std::vector<std::string>& Arr
 		size_t pos = 0;
 		while (sepPos != std::string::npos)
 		{
-			Array.push_back(Str.substr(pos, sepPos));
+			Array.push_back(Str.substr(pos, sepPos - pos));
 
 			pos = sepPos + 1;
 			sepPos = Str.find(Sep, pos);
@@ -190,21 +190,27 @@ void ImuWit::extract2Array(const std::string& Str, std::vector<std::string>& Arr
 	}
 }
 
+void ImuWit::convert2Hex(std::vector<std::string>& Array, std::vector<uint8_t>& HexArray)
+{
+	for (const auto& it : Array)
+	{
+		std::stringstream converter;
+		converter << std::hex << it;
+		int byte = 0;
+		converter >> byte;
+		HexArray.push_back(uint8_t(byte & 0xFF));
+	}
+}
+
 void ImuWit::init(const std::string& Unlock, const std::string& ResetYaw, bool WithMagnetic, bool WithTemperature)
 {
 	// reset commands
 	std::vector<std::string> separated;
 	extract2Array(Unlock, separated);
-	for (const auto& it : separated)
-	{
-		unlock_.push_back((uint8_t)std::stoi(it));
-	}
+	convert2Hex(separated, unlock_);
 	separated.clear();
 	extract2Array(ResetYaw, separated);
-	for (const auto& it : separated)
-	{
-		reset_yaw_.push_back((uint8_t)std::stoi(it));
-	}
+	convert2Hex(separated, reset_yaw_);
 
 	// publisher
 	pub_data_ = std::make_unique<ros::Publisher>(node_handle_->advertise<sensor_msgs::Imu>(data_topic_, 10));

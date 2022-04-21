@@ -40,6 +40,7 @@ public:
 
 protected:
 	void extract2Array(const std::string& Str, std::vector<std::string>& Array, const char Sep = '*');
+	void convert2Hex(std::vector<std::string>& Array, std::vector<uint8_t>& HexArray);
 	void init(const std::string& Unlock, const std::string& ResetYaw, bool WithMagnetic, bool WithTemperature);
 	void fetchData(unsigned char* Data, size_t Length);
 

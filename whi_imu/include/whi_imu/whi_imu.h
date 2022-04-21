@@ -15,6 +15,7 @@ Changelog:
 2022-xx-xx: xxx
 ******************************************************************/
 #pragma once
+#include <ros/ros.h>
 #include <std_srvs/Trigger.h>
 #include <memory>
 

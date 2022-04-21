@@ -17,26 +17,23 @@ Changelog:
 ******************************************************************/
 #include <iostream>
 #include <signal.h>
+#include <functional>
 
 #include "whi_imu/whi_imu.h"
 
 #define ASYNC 1
 
-// since ctrl-c break cannot trigger descontructor, override the signal interruption 
-std::unique_ptr<whi_motion_interface::Imu> imu = nullptr;
-
-void handleInterrupt(int Signal)
+// since ctrl-c break cannot trigger descontructor, override the signal interruption
+std::function<void(int)> functionWrapper;
+void signalHandler(int Signal)
 {
-	imu = nullptr;
-
-	// all the default sigint handler does is call shutdown()
-	ros::shutdown();
+	functionWrapper(Signal);
 }
 
 int main(int argc, char** argv)
 {
 	/// node version and copyright announcement
-	std::cout << "\nWHI imu VERSION 00.02" << std::endl;
+	std::cout << "\nWHI imu VERSION 00.03" << std::endl;
 	std::cout << "Copyright © 2022-2023 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
 	/// ros infrastructure
@@ -44,11 +41,18 @@ int main(int argc, char** argv)
 	auto nodeHandle = std::make_shared<ros::NodeHandle>();
 
 	/// node logic
-	imu = std::make_unique<whi_motion_interface::Imu>(nodeHandle);
+	auto imu = std::make_unique<whi_motion_interface::Imu>(nodeHandle);
 
 	// override the default ros sigint handler, with this override the shutdown will be gracefull
     // NOTE: this must be set after the NodeHandle is created
-	signal(SIGINT, handleInterrupt);
+	signal(SIGINT, signalHandler);
+	functionWrapper = [&](int)
+	{
+		imu = nullptr;
+
+		// all the default sigint handler does is call shutdown()
+		ros::shutdown();
+	};
 
 	/// ros spinner
 	// NOTE: We run the ROS loop in a separate thread as external calls such as
