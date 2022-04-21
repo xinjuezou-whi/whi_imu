@@ -109,10 +109,9 @@ void ImuWit::read2Publish()
 				imuData.orientation.z = quaternion_.z;
 				imuData.orientation.w = quaternion_.w;
 			}
-
 			imuData.orientation_covariance = { 1e-6, 0, 0, 0, 1e-6, 0, 0, 0, 1e-6 };
-
 			pub_data_->publish(imuData);
+
 			if (pub_mag_)
 			{
 				sensor_msgs::MagneticField magData;
