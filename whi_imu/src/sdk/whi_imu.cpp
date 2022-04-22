@@ -85,11 +85,15 @@ namespace whi_motion_interface
     {
         if (imu_inst_->reset())
         {
-            return true;
+            Res.success = true;
+            Res.message = "reset succeed";
         }
         else
         {
-            return false;
+            Res.success = false;
+            Res.message = "failed to reset";
         }
+
+        return Res.success;
     }
 }
