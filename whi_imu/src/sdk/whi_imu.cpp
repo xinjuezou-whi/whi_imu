@@ -47,22 +47,22 @@ namespace whi_motion_interface
         std::string port;
         int baudrate = 0;
         int packLength = 0;
-        std::string unlock;
-        std::string resetYaw;
+        std::vector<int> unlockList;
+        std::vector<int> resetList;
         bool withMag = false;
         bool withTemp = false;
         node_handle_->param("/whi_imu/hardware_interface/module", module, std::string(type_str[WIT_JY61P]));
         node_handle_->param("/whi_imu/hardware_interface/port", port, std::string("/dev/ttyUSB0"));
         node_handle_->param("/whi_imu/hardware_interface/baudrate", baudrate, 9600);
         node_handle_->param("/whi_imu/hardware_interface/pack_length", packLength, 11);
-        node_handle_->param("/whi_imu/hardware_interface/unlock", unlock, std::string());
-        node_handle_->param("/whi_imu/hardware_interface/reset_yaw", resetYaw, std::string());
+        node_handle_->getParam("/whi_imu/hardware_interface/unlock", unlockList);
+        node_handle_->getParam("/whi_imu/hardware_interface/reset_yaw", resetList);
         node_handle_->param("/whi_imu/hardware_interface/with_magnetic", withMag, true);
         node_handle_->param("/whi_imu/hardware_interface/with_temperature", withTemp, false);
         transform(module.begin(), module.end(), module.begin(), ::tolower);
         if (module == type_str[WIT_JY61P])
         {
-            imu_inst_ = std::make_unique<ImuWit>(node_handle_, module, port, baudrate, packLength, unlock, resetYaw, withMag, withTemp);
+            imu_inst_ = std::make_unique<ImuWit>(node_handle_, module, port, baudrate, packLength, unlockList, resetList, withMag, withTemp);
             imu_inst_->setPublishParams(frameId, dataTopic, magTopic, tempTopic);
         }
 

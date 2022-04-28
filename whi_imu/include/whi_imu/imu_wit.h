@@ -29,7 +29,7 @@ public:
 	ImuWit() = delete;
 	ImuWit(std::shared_ptr<ros::NodeHandle>& NodeHandle, const std::string& Module,
 		const std::string& SerPort, unsigned int Baudrate, unsigned int PackLength,
-		const std::string& Unlock, const std::string& ResetYaw,
+		const std::vector<int>& Unlock, const std::vector<int>& ResetYaw,
 		bool WithMagnetic = true, bool WithTemperature = false);
 	~ImuWit() override;
 
@@ -41,7 +41,7 @@ public:
 protected:
 	void extract2Array(const std::string& Str, std::vector<std::string>& Array, const char Sep = '*');
 	void convert2Hex(std::vector<std::string>& Array, std::vector<uint8_t>& HexArray);
-	void init(const std::string& Unlock, const std::string& ResetYaw, bool WithMagnetic, bool WithTemperature);
+	void init(const std::vector<int>& Unlock, const std::vector<int>& ResetYaw, bool WithMagnetic, bool WithTemperature);
 	void fetchData(unsigned char* Data, size_t Length);
 
 protected:
