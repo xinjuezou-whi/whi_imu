@@ -35,6 +35,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\sdk\imu_base.cpp" />
     <ClCompile Include="src\sdk\imu_wit.cpp" />
     <ClCompile Include="src\sdk\whi_imu.cpp" />
     <ClCompile Include="src\whi_imu_node.cpp" />

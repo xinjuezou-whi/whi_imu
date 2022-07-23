@@ -48,7 +48,10 @@ ImuWit::ImuWit(std::shared_ptr<ros::NodeHandle>& NodeHandle, const std::string& 
 
 ImuWit::~ImuWit()
 {
-	serial_inst_->close();
+	if (serial_inst_)
+	{
+		serial_inst_->close();
+	}
 
 	if (pub_data_)
 	{
@@ -229,7 +232,10 @@ void ImuWit::init(const std::vector<int>& Unlock, const std::vector<int>& ResetY
 	try
 	{
 		serial_inst_ = std::make_unique<serial::Serial>(serial_port_, baudrate_, serial::Timeout::simpleTimeout(500));
-		reset();
+		if (reset_)
+		{
+			reset();
+		}
 	}
 	catch (serial::IOException& e)
 	{

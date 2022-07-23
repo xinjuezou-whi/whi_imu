@@ -24,6 +24,9 @@
     <ClCompile Include="src\sdk\imu_wit.cpp">
       <Filter>src\sdk</Filter>
     </ClCompile>
+    <ClCompile Include="src\sdk\imu_base.cpp">
+      <Filter>src\sdk</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\whi_imu\whi_imu.h">
