@@ -66,7 +66,7 @@ int main(int argc, char** argv)
 	spinner.spin();
 #endif
 
-	std::cout << "whi_motion_interface exited" << std::endl;
+	std::cout << "whi_imu exited" << std::endl;
 
 	return 0;
 }
