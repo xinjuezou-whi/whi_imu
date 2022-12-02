@@ -1,1 +1,76 @@
 # whi_imu
+This package is the hardware driver of IMU for ROS. It currently supports the JY60/60P of WIT Motion, possibly JY901 but without verification. Since it is a general IMU driver package, all specific product instances are derived from base class ImuBase. Each product has its own parameters configuration file which would be included by its launch file.
+
+## Prerequisites
+The products relying on serial to communicate need serial package. This package leverages the serial package of ROS, so please first install it with belowing commands:
+```
+sudo apt install ros-<ros distro>-serial
+```
+
+## Build Up
+Go into your catkin workspace and initialize wstool if necessary (assuming ~/catkin_workspace as workspace path):
+```
+cd ~/catkin_workspace/src
+git clone https://github.com/xinjuezou-whi/whi_imu.git
+```
+
+Build the package:
+```
+cd ..
+catkin build
+source ~/catkin_workspace/devel/setup.bash
+```
+
+## Parameters Configuration
+Yaml file is used to bearing the parameters including common ones and specified ones. Each product has its own configuration file. Belowing is an example of config file:
+```
+whi_imu:
+  loop_hz: 50 # hz
+  frame_id: 'imu'
+  data_topic: 'imu_data'
+  mag_topic: 'mag_data'
+  temp_topic: 'temp_data'
+  hardware_interface:
+    module: 'JY61P'
+    port: '/dev/imu'
+    baudrate: 115200
+    pack_length: 11
+    # JY-61P is 0xff 0xaa 0x01 0x04 0x00 with unlock
+    unlock: [0xff, 0xaa, 0x69, 0x88, 0xb5]
+    reset_yaw: [0xff, 0xaa, 0x01, 0x04, 0x00]
+    with_magnetic: true
+    with_temperature: false
+```
+
+There are three major parts need your attention:
+The first is to configure the frame ID to meet your TF tree:
+- frame_id: the frame ID of the IMU in your TF tree 
+
+And second, configure the topic params to meet your subscriber:
+- data_topic: the orientation data
+- mag_topic: the magnetic data
+- temp_topic: the temperature data
+
+Then the last, configure the serial communication params to meet your IMU's setting:
+- device port: the serial port of your IMU
+- baudrate: the serial baudrate of your IMU
+
+This configuration file should be included by the launch file. Update the name of yaml file belowing the line of "params" with the one of corresponding product, like the belowing example the product is specified as JY61P: 
+```
+  <!-- params -->
+  <rosparam file="$(find whi_imu)/config/imu_hardware_jy61p.yaml" command="load"/>
+```
+
+## Run
+Launch the whi_imu node with commands:
+```
+cd ~/catkin_workspace/
+roslaunch whi_imu whi_imu.launch
+```
+
+Then in another terminal, use the rostopic command to check its outputs:
+```
+rostopic echo /imu_data
+```
+
+![imu](https://user-images.githubusercontent.com/72239958/205224541-0f30e5e7-d1aa-4db5-af34-10e4fe3ce7f2.gif)
