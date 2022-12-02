@@ -6,7 +6,7 @@
   <param name="reset_z" type="bool" value="false" unless="$(arg reset)"/>
   
   <!-- params -->
-  <rosparam file="$(find whi_imu)/config/imu_hardware.yaml" command="load"/>
+  <rosparam file="$(find whi_imu)/config/imu_hardware_jy61p.yaml" command="load"/>
 
   <!-- hardware interface -->
   <node name="whi_imu" pkg="whi_imu" type="whi_imu_node" output="screen"/>
