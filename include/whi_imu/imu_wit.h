@@ -27,9 +27,9 @@ class ImuWit : public ImuBase
 {
 public:
 	ImuWit() = delete;
-	ImuWit(std::shared_ptr<ros::NodeHandle>& NodeHandle, const std::string& Module,
+	ImuWit(std::shared_ptr<ros::NodeHandle>& NodeHandle, 
 		const std::string& SerPort, unsigned int Baudrate, unsigned int PackLength,
-		const std::vector<int>& Unlock, const std::vector<int>& ResetYaw,
+		const std::string& Unlock, const std::string& ResetYaw,
 		bool WithMagnetic = true, bool WithTemperature = false);
 	~ImuWit() override;
 
@@ -40,8 +40,7 @@ public:
 
 protected:
 	void extract2Array(const std::string& Str, std::vector<std::string>& Array, const char Sep = '*');
-	void convert2Hex(std::vector<std::string>& Array, std::vector<uint8_t>& HexArray);
-	void init(const std::vector<int>& Unlock, const std::vector<int>& ResetYaw, bool WithMagnetic, bool WithTemperature);
+	void init(const std::string& Unlock, const std::string& ResetYaw, bool WithMagnetic, bool WithTemperature);
 	void fetchData(unsigned char* Data, size_t Length);
 
 protected:
@@ -79,7 +78,6 @@ protected:
 	};
 
 protected:
-	std::string module_;
 	std::string serial_port_;
 	unsigned int baudrate_{ 9600 };
 	size_t pack_length_{ 11 };
@@ -92,11 +90,4 @@ protected:
 	Angle angle_;
 	Triple magnetic_;
 	Quat quaternion_;
-
-protected:
-	static const double CONSTANT;
-	static const double CONSTANT_ACC;
-	static const double CONSTANT_GYRO;
-	static const double CONSTANT_ANGLE;
-	static const double CONSTANT_QUATERNION;
 };
