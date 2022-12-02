@@ -5,34 +5,54 @@ Features:
 - imu operation logic for onboard hardware
 - xxx
 
+Prerequisites:
+- sudo apt install ros-<ros distro>-serial
+
 Written by Xinjue Zou, xinjue.zou@outlook.com
 
 GNU General Public License, check LICENSE for more information.
 All text above must be included in any redistribution.
 
-Changelog:
-2022-04-04: Initial version
-2022-xx-xx: xxx
 ******************************************************************/
 #include "whi_imu/imu_wit.h"
 
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/MagneticField.h>
 #include <sensor_msgs/Temperature.h>
+#include <tf2/LinearMath/Quaternion.h>
 #include <cstring>
 
-ImuWit::ImuWit(std::shared_ptr<ros::NodeHandle>& NodeHandle, 
+#define WHI_PI (std::atan(1.0) * 4.0)
+
+const double ImuWit::CONSTANT = 32768.0;
+const double ImuWit::CONSTANT_ACC = 16.0 * 9.8 / ImuWit::CONSTANT;
+const double ImuWit::CONSTANT_GYRO = 2000.0 * WHI_PI / (180.0 * ImuWit::CONSTANT);
+const double ImuWit::CONSTANT_ANGLE = WHI_PI / ImuWit::CONSTANT;
+const double ImuWit::CONSTANT_QUATERNION = 1.0 / ImuWit::CONSTANT;
+ImuWit::ImuWit(std::shared_ptr<ros::NodeHandle>& NodeHandle, const std::string& Module,
 	const std::string& SerPort, unsigned int Baudrate, unsigned int PackLength,
-	const std::string& Unlock, const std::string& ResetYaw,
+	const std::vector<int>& Unlock, const std::vector<int>& ResetYaw,
 	bool WithMagnetic/* = true*/, bool WithTemperature/* = false*/)
-	: ImuBase(NodeHandle)
+	: ImuBase(NodeHandle), module_(Module)
 	, serial_port_(SerPort), baudrate_(Baudrate), pack_length_(PackLength)
 {
 	init(Unlock, ResetYaw, WithMagnetic, WithTemperature);
+
+#ifdef DEBUG
+	std::cout << "acc const " << 1 / 32768.00 * 16 * 9.8 << " const " << CONSTANT_ACC << std::endl;
+	std::cout << "gyro const " << 1 / 32768.00 * 2000 / 180 * WHI_PI << " const " << CONSTANT_GYRO << std::endl;
+	std::cout << "angle const " << 1 / CONSTANT * WHI_PI << " const " << CONSTANT_ANGLE << std::endl;
+	std::cout << "quat const " << 1 / CONSTANT << " const " << CONSTANT_QUATERNION << std::endl;
+#endif
 }
 
 ImuWit::~ImuWit()
 {
+	if (serial_inst_)
+	{
+		serial_inst_->close();
+	}
+
 	if (pub_data_)
 	{
 		pub_data_->shutdown();
@@ -75,13 +95,26 @@ void ImuWit::read2Publish()
 			imuData.angular_velocity.z = gyro_.z;
 			imuData.linear_acceleration_covariance = { 1e-6, 0, 0, 0, 1e-6, 0, 0, 0, 1e-6 };
 
-			imuData.orientation.x = quaternion_.x;
-			imuData.orientation.y = quaternion_.y;
-			imuData.orientation.z = quaternion_.z;
-			imuData.orientation.w = quaternion_.w;
+			// JY-61/61P has no quartnion output
+			if (module_.find("61") != std::string::npos)
+			{
+				tf2::Quaternion convertQuaternion;
+				convertQuaternion.setRPY(angle_.r, angle_.p, angle_.y);
+				imuData.orientation.x = convertQuaternion.getX();
+				imuData.orientation.y = convertQuaternion.getY();
+				imuData.orientation.z = convertQuaternion.getZ();
+				imuData.orientation.w = convertQuaternion.getW();
+			}
+			else
+			{
+				imuData.orientation.x = quaternion_.x;
+				imuData.orientation.y = quaternion_.y;
+				imuData.orientation.z = quaternion_.z;
+				imuData.orientation.w = quaternion_.w;
+			}
 			imuData.orientation_covariance = { 1e-6, 0, 0, 0, 1e-6, 0, 0, 0, 1e-6 };
-
 			pub_data_->publish(imuData);
+
 			if (pub_mag_)
 			{
 				sensor_msgs::MagneticField magData;
@@ -148,7 +181,7 @@ void ImuWit::extract2Array(const std::string& Str, std::vector<std::string>& Arr
 		size_t pos = 0;
 		while (sepPos != std::string::npos)
 		{
-			Array.push_back(Str.substr(pos, sepPos));
+			Array.push_back(Str.substr(pos, sepPos - pos));
 
 			pos = sepPos + 1;
 			sepPos = Str.find(Sep, pos);
@@ -160,38 +193,49 @@ void ImuWit::extract2Array(const std::string& Str, std::vector<std::string>& Arr
 	}
 }
 
-void ImuWit::init(const std::string& Unlock, const std::string& ResetYaw, bool WithMagnetic, bool WithTemperature)
+void ImuWit::convert2Hex(std::vector<std::string>& Array, std::vector<uint8_t>& HexArray)
 {
-	// reset commands
-	std::vector<std::string> separated;
-	extract2Array(Unlock, separated);
-	for (const auto& it : separated)
+	for (const auto& it : Array)
 	{
-		unlock_.push_back((uint8_t)std::stoi(it));
+		std::stringstream converter;
+		converter << std::hex << it;
+		int byte = 0;
+		converter >> byte;
+		HexArray.push_back(uint8_t(byte & 0xFF));
 	}
-	separated.clear();
-	extract2Array(ResetYaw, separated);
-	for (const auto& it : separated)
+}
+
+void ImuWit::init(const std::vector<int>& Unlock, const std::vector<int>& ResetYaw, bool WithMagnetic, bool WithTemperature)
+{
+	// unlock and reset yaw commands
+	for (auto it : Unlock)
 	{
-		reset_yaw_.push_back((uint8_t)std::stoi(it));
+		unlock_.push_back((uint8_t)it);
+	}
+	for (auto it : ResetYaw)
+	{
+		reset_yaw_.push_back((uint8_t)it);
 	}
 
 	// publisher
-	pub_data_ = std::make_unique<ros::Publisher>(node_handle_->advertise<sensor_msgs::Imu>("imu_data", 10));
+	pub_data_ = std::make_unique<ros::Publisher>(node_handle_->advertise<sensor_msgs::Imu>(data_topic_, 10));
 	if (WithMagnetic)
 	{
-		pub_mag_ = std::make_unique<ros::Publisher>(node_handle_->advertise<sensor_msgs::MagneticField>("mag_data", 10));
+		pub_mag_ = std::make_unique<ros::Publisher>(node_handle_->advertise<sensor_msgs::MagneticField>(mag_topic_, 10));
 	}
 	if (WithTemperature)
 	{
-		pub_temp_ = std::make_unique<ros::Publisher>(node_handle_->advertise<sensor_msgs::Temperature>("temp_data", 10));
+		pub_temp_ = std::make_unique<ros::Publisher>(node_handle_->advertise<sensor_msgs::Temperature>(temp_topic_, 10));
 	}
 
 	// serial
 	try
 	{
 		serial_inst_ = std::make_unique<serial::Serial>(serial_port_, baudrate_, serial::Timeout::simpleTimeout(500));
-		serial_inst_->open();
+		if (reset_)
+		{
+			reset();
+		}
 	}
 	catch (serial::IOException& e)
 	{
@@ -210,7 +254,7 @@ void ImuWit::fetchData(unsigned char* Data, size_t Length)
 			continue;
 		}
 
-		unsigned int raw[4] = { 0, 0, 0, 0 };
+		int16_t raw[4] = { 0, 0, 0, 0 };
 
 		switch (head[1])
 		{
@@ -219,21 +263,24 @@ void ImuWit::fetchData(unsigned char* Data, size_t Length)
 			break;
 		case 0x51:
 			memcpy(&raw, &head[2], 8);
-			acc_.x = raw[0] / 32768.00 * 16 * 9.8;
-			acc_.y = raw[1] / 32768.00 * 16 * 9.8;
-			acc_.z = raw[2] / 32768.00 * 16 * 9.8;
+			acc_.x = raw[0] * CONSTANT_ACC;
+			acc_.y = raw[1] * CONSTANT_ACC;
+			acc_.z = raw[2] * CONSTANT_ACC;
 			break;
 		case 0x52:
 			memcpy(&raw, &head[2], 8);
-			gyro_.x = raw[0] / 32768.00 * 2000 / 180 * 3.1415926;
-			gyro_.y = raw[1] / 32768.00 * 2000 / 180 * 3.1415926;
-			gyro_.z = raw[2] / 32768.00 * 2000 / 180 * 3.1415926;
+			gyro_.x = raw[0] * CONSTANT_GYRO;
+			gyro_.y = raw[1] * CONSTANT_GYRO;
+			gyro_.z = raw[2] * CONSTANT_GYRO;
 			break;
 		case 0x53:
 			memcpy(&raw, &head[2], 8);
-			angle_.r = raw[0] / 32768.00 * 3.1415926;
-			angle_.p = raw[1] / 32768.00 * 3.1415926;
-			angle_.y = raw[2] / 32768.00 * 3.1415926;
+			angle_.r = raw[0] * CONSTANT_ANGLE;
+			angle_.p = raw[1] * CONSTANT_ANGLE;
+			angle_.y = raw[2] * CONSTANT_ANGLE;
+#ifdef DEBUG
+			printf("yaw %.2f\n", angle_.y);
+#endif
 			break;
 		case 0x54:
 			memcpy(&raw, &head[2], 8);
@@ -247,10 +294,10 @@ void ImuWit::fetchData(unsigned char* Data, size_t Length)
 			// case 0x58:	memcpy(&stcGPSV,&chrTemp[2],8);break;
 		case 0x59:
 			memcpy(&raw, &head[2], 8);
-			quaternion_.w = raw[0] / 32768.00;
-			quaternion_.x = raw[1] / 32768.00;
-			quaternion_.y = raw[2] / 32768.00;
-			quaternion_.z = raw[3] / 32768.00;
+			quaternion_.w = raw[0] * CONSTANT_QUATERNION;
+			quaternion_.x = raw[1] * CONSTANT_QUATERNION;
+			quaternion_.y = raw[2] * CONSTANT_QUATERNION;
+			quaternion_.z = raw[3] * CONSTANT_QUATERNION;
 			break;
 		}
 

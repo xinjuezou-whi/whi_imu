@@ -23,18 +23,11 @@ class ImuBase
 {
 public:
 	ImuBase() = delete;
-	ImuBase(std::shared_ptr<ros::NodeHandle>& NodeHandle)
-		: node_handle_(NodeHandle) {};
+	ImuBase(std::shared_ptr<ros::NodeHandle>& NodeHandle);
 	virtual ~ImuBase() = default;
 
 public:
-	void setPublishParams(const std::string& FrameId, const std::string& DataTopic, const std::string& MagTopic, const std::string& TempTopic)
-	{
-		frame_id_.assign(FrameId);
-		data_topic_.assign(DataTopic);
-		mag_topic_.assign(MagTopic);
-		temp_topic_.assign(TempTopic);
-	};
+	void setPublishParams(const std::string& FrameId, const std::string& DataTopic, const std::string& MagTopic, const std::string& TempTopic);
 	virtual void read2Publish() = 0;
 	virtual bool reset() = 0;
 
@@ -47,4 +40,5 @@ protected:
 	std::unique_ptr<ros::Publisher> pub_data_{ nullptr };
 	std::unique_ptr<ros::Publisher> pub_mag_{ nullptr };
 	std::unique_ptr<ros::Publisher> pub_temp_{ nullptr };
+	bool reset_{ false };
 };
