@@ -1,5 +1,5 @@
 # whi_imu
-This package is the hardware driver of IMU for ROS. It currently supports the JY60/60P of WIT Motion, possibly JY901 but without verification. Since it is a general IMU driver package and will be extended to support other IMU products, all specific product instances are derived from base class ImuBase. Each product has its own parameters configuration file which would be included by its launch file.
+This package is the hardware driver of IMU for ROS. It currently supports the JY60/60P, and JY901 of WIT Motion. Since it is a general IMU driver package and will be extended to support other IMU products, all specific product instances are derived from base class ImuBase. Each product has its own parameters configuration file which would be included by its launch file.
 
 ## Prerequisites
 The products relying on serial to communicate need serial package. This package leverages the serial package of ROS, so please first install it with belowing commands:
@@ -38,6 +38,7 @@ whi_imu:
     # JY-61P is 0xff 0xaa 0x01 0x04 0x00 with unlock
     unlock: [0xff, 0xaa, 0x69, 0x88, 0xb5]
     reset_yaw: [0xff, 0xaa, 0x01, 0x04, 0x00]
+    instruction_min_span: 5 # unit millisecond
     with_magnetic: true
     with_temperature: false
 ```
