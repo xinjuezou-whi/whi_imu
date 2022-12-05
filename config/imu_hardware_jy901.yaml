@@ -6,7 +6,7 @@ whi_imu:
   temp_topic: 'temp_data'
   hardware_interface:
     module: 'JY901'
-    port: '/dev/ttyUSB0'
+    port: '/dev/imu'
     baudrate: 115200
     pack_length: 11
     # JY-901 is 0xff 0xaa 0x01 0x04 0x00 with unlock and longer span
