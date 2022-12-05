@@ -11,5 +11,6 @@ whi_imu:
     pack_length: 11
     # JY-61 is 0xff 0xaa 0x52
     reset_yaw: [0xff, 0xaa, 0x52]
+    instruction_min_span: 5 # unit millisecond
     with_magnetic: true
     with_temperature: false

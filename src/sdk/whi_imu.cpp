@@ -16,7 +16,7 @@ All text above must be included in any redistribution.
 
 namespace whi_motion_interface
 {
-    const char* Imu::type_str[TYPE_SUM] = { "jy61p" };
+    const char* Imu::type_str[TYPE_SUM] = { "jy61p", "jy901" };
 
     Imu::Imu(std::shared_ptr<ros::NodeHandle>& NodeHandle)
         : node_handle_(NodeHandle)
@@ -47,24 +47,30 @@ namespace whi_motion_interface
         std::string port;
         int baudrate = 0;
         int packLength = 0;
-        std::vector<int> unlockList;
-        std::vector<int> resetList;
+        std::shared_ptr<std::vector<int>> resetList = std::make_shared<std::vector<int>>();
+        std::shared_ptr<std::vector<int>> unlockList = std::make_shared<std::vector<int>>();
+        int instructionMinSpan = 5;
         bool withMag = false;
         bool withTemp = false;
         node_handle_->param("/whi_imu/hardware_interface/module", module, std::string(type_str[WIT_JY61P]));
         node_handle_->param("/whi_imu/hardware_interface/port", port, std::string("/dev/ttyUSB0"));
         node_handle_->param("/whi_imu/hardware_interface/baudrate", baudrate, 9600);
         node_handle_->param("/whi_imu/hardware_interface/pack_length", packLength, 11);
-        node_handle_->getParam("/whi_imu/hardware_interface/unlock", unlockList);
-        node_handle_->getParam("/whi_imu/hardware_interface/reset_yaw", resetList);
+        node_handle_->getParam("/whi_imu/hardware_interface/reset_yaw", *resetList);
+        node_handle_->getParam("/whi_imu/hardware_interface/unlock", *unlockList);
+        node_handle_->param("/whi_imu/hardware_interface/instruction_min_span", instructionMinSpan, 5);
         node_handle_->param("/whi_imu/hardware_interface/with_magnetic", withMag, true);
         node_handle_->param("/whi_imu/hardware_interface/with_temperature", withTemp, false);
         transform(module.begin(), module.end(), module.begin(), ::tolower);
-        if (module == type_str[WIT_JY61P])
+        if (module == type_str[WIT_JY61P] || module == type_str[WIT_JY901] )
         {
-            imu_inst_ = std::make_unique<ImuWit>(node_handle_, module, port, baudrate, packLength, unlockList, resetList, withMag, withTemp);
-            imu_inst_->setPublishParams(frameId, dataTopic, magTopic, tempTopic);
+            imu_inst_ = std::make_unique<ImuWit>(node_handle_, module, port, baudrate, packLength, resetList, unlockList, instructionMinSpan, withMag, withTemp);
         }
+        else
+        {
+            imu_inst_ = std::make_unique<ImuWit>(node_handle_, module, port, baudrate, packLength, resetList);
+        }
+        imu_inst_->setPublishParams(frameId, dataTopic, magTopic, tempTopic);
 
         // providing the reset service
         srv_reset_ = std::make_unique<ros::ServiceServer>(node_handle_->advertiseService("imu_reset", &Imu::onServiceReset, this));

@@ -29,7 +29,7 @@ public:
 	ImuWit() = delete;
 	ImuWit(std::shared_ptr<ros::NodeHandle>& NodeHandle, const std::string& Module,
 		const std::string& SerPort, unsigned int Baudrate, unsigned int PackLength,
-		const std::vector<int>& Unlock, const std::vector<int>& ResetYaw,
+		const std::shared_ptr<std::vector<int>> ResetYaw, const std::shared_ptr<std::vector<int>> Unlock = nullptr,  int InstructionMinSpan = 5,
 		bool WithMagnetic = true, bool WithTemperature = false);
 	~ImuWit() override;
 
@@ -41,7 +41,7 @@ public:
 protected:
 	void extract2Array(const std::string& Str, std::vector<std::string>& Array, const char Sep = '*');
 	void convert2Hex(std::vector<std::string>& Array, std::vector<uint8_t>& HexArray);
-	void init(const std::vector<int>& Unlock, const std::vector<int>& ResetYaw, bool WithMagnetic, bool WithTemperature);
+	void init(const std::shared_ptr<std::vector<int>> ResetYaw, const std::shared_ptr<std::vector<int>> Unlock, bool WithMagnetic, bool WithTemperature);
 	void fetchData(unsigned char* Data, size_t Length);
 
 protected:
@@ -85,6 +85,7 @@ protected:
 	size_t pack_length_{ 11 };
 	std::vector<uint8_t> unlock_;
 	std::vector<uint8_t> reset_yaw_;
+	int instruction_min_span_{ 5 };
 	std::unique_ptr<serial::Serial> serial_inst_{ nullptr };
 	Time time_;
 	Triple acc_;

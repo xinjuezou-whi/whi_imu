@@ -31,12 +31,12 @@ const double ImuWit::CONSTANT_ANGLE = WHI_PI / ImuWit::CONSTANT;
 const double ImuWit::CONSTANT_QUATERNION = 1.0 / ImuWit::CONSTANT;
 ImuWit::ImuWit(std::shared_ptr<ros::NodeHandle>& NodeHandle, const std::string& Module,
 	const std::string& SerPort, unsigned int Baudrate, unsigned int PackLength,
-	const std::vector<int>& Unlock, const std::vector<int>& ResetYaw,
+	const std::shared_ptr<std::vector<int>> ResetYaw, const std::shared_ptr<std::vector<int>> Unlock/* = nullptr*/, int InstructionMinSpan/* = 5*/,
 	bool WithMagnetic/* = true*/, bool WithTemperature/* = false*/)
 	: ImuBase(NodeHandle), module_(Module)
-	, serial_port_(SerPort), baudrate_(Baudrate), pack_length_(PackLength)
+	, serial_port_(SerPort), baudrate_(Baudrate), pack_length_(PackLength), instruction_min_span_(InstructionMinSpan)
 {
-	init(Unlock, ResetYaw, WithMagnetic, WithTemperature);
+	init(ResetYaw, Unlock, WithMagnetic, WithTemperature);
 
 #ifdef DEBUG
 	std::cout << "acc const " << 1 / 32768.00 * 16 * 9.8 << " const " << CONSTANT_ACC << std::endl;
@@ -151,12 +151,12 @@ bool ImuWit::reset()
 	if (!unlock_.empty() && serial_inst_)
 	{
 		serial_inst_->write(unlock_);
-		usleep(5000);
+		usleep(1000 * instruction_min_span_);
 	}
 	if (!reset_yaw_.empty() && serial_inst_)
 	{
 		serial_inst_->write(reset_yaw_);
-		usleep(5000);
+		usleep(1000 * instruction_min_span_);
 	}
 	else
 	{
@@ -205,16 +205,23 @@ void ImuWit::convert2Hex(std::vector<std::string>& Array, std::vector<uint8_t>& 
 	}
 }
 
-void ImuWit::init(const std::vector<int>& Unlock, const std::vector<int>& ResetYaw, bool WithMagnetic, bool WithTemperature)
+void ImuWit::init(const std::shared_ptr<std::vector<int>> ResetYaw, const std::shared_ptr<std::vector<int>> Unlock,
+	bool WithMagnetic, bool WithTemperature)
 {
 	// unlock and reset yaw commands
-	for (auto it : Unlock)
+	if (ResetYaw)
 	{
-		unlock_.push_back((uint8_t)it);
+		for (auto it : *ResetYaw)
+		{
+			reset_yaw_.push_back((uint8_t)it);
+		}
 	}
-	for (auto it : ResetYaw)
+	if (Unlock)
 	{
-		reset_yaw_.push_back((uint8_t)it);
+		for (auto it : *Unlock)
+		{
+			unlock_.push_back((uint8_t)it);
+		}
 	}
 
 	// publisher
