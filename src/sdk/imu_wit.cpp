@@ -34,7 +34,7 @@ ImuWit::ImuWit(std::shared_ptr<ros::NodeHandle>& NodeHandle, const std::string& 
 	const std::shared_ptr<std::vector<int>> ResetYaw, const std::shared_ptr<std::vector<int>> Unlock/* = nullptr*/, int InstructionMinSpan/* = 5*/,
 	bool WithMagnetic/* = true*/, bool WithTemperature/* = false*/)
 	: ImuBase(NodeHandle), module_(Module)
-	, serial_port_(SerPort), baudrate_(Baudrate), pack_length_(PackLength), instruction_min_span_(InstructionMinSpan)
+	, serial_port_(SerPort), baudrate_(Baudrate), pack_length_(PackLength), instruction_min_span_(1000 * InstructionMinSpan)
 {
 	init(ResetYaw, Unlock, WithMagnetic, WithTemperature);
 
@@ -151,12 +151,12 @@ bool ImuWit::reset()
 	if (!unlock_.empty() && serial_inst_)
 	{
 		serial_inst_->write(unlock_);
-		usleep(1000 * instruction_min_span_);
+		usleep(instruction_min_span_);
 	}
 	if (!reset_yaw_.empty() && serial_inst_)
 	{
 		serial_inst_->write(reset_yaw_);
-		usleep(1000 * instruction_min_span_);
+		usleep(instruction_min_span_);
 	}
 	else
 	{
