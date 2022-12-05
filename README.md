@@ -68,6 +68,10 @@ Launch the whi_imu node with commands:
 cd ~/catkin_workspace/
 roslaunch whi_imu whi_imu.launch
 ```
+Or with reset flag to set yaw as zero:
+```
+roslaunch whi_imu whi_imu.launch reset:=true
+```
 
 Then in another terminal, use the rostopic command to check its outputs:
 ```
