@@ -4,7 +4,7 @@
   <arg name="reset" default="false"/>
   <param name="reset_z" type="bool" value="true" if="$(arg reset)"/>
   <param name="reset_z" type="bool" value="false" unless="$(arg reset)"/>
-  
+
   <!-- params -->
   <rosparam file="$(find whi_imu)/config/imu_hardware_jy61p.yaml" command="load"/>
 
