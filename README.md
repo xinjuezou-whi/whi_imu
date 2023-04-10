@@ -62,6 +62,9 @@ This configuration file should be included by the launch file. Update the name o
   <rosparam file="$(find whi_imu)/config/imu_hardware_jy61p.yaml" command="load"/>
 ```
 
+## Service
+It advertises service "imu_reset" for reset the yaw, which is helpfull at the stage of fully initialized
+
 ## Run
 Launch the whi_imu node with commands:
 ```
