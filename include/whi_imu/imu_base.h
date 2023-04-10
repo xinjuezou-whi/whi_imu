@@ -28,6 +28,7 @@ public:
 
 public:
 	void setPublishParams(const std::string& FrameId, const std::string& DataTopic, const std::string& MagTopic, const std::string& TempTopic);
+	void resetFlag(bool Flag);
 	virtual void read2Publish() = 0;
 	virtual bool reset() = 0;
 

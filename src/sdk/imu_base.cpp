@@ -26,3 +26,8 @@ void ImuBase::setPublishParams(const std::string& FrameId, const std::string& Da
 	mag_topic_.assign(MagTopic);
 	temp_topic_.assign(TempTopic);
 }
+
+void ImuBase::resetFlag(bool Flag)
+{
+	reset_ = Flag;
+}

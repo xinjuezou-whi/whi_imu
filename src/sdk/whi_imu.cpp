@@ -34,6 +34,9 @@ namespace whi_motion_interface
 
     void Imu::init()
     {
+        // reset param
+        bool resetAtInitial = false;
+        node_handle_->param("reset_z", resetAtInitial, false);
         // drivers
         std::string frameId;
         std::string dataTopic;
@@ -71,6 +74,7 @@ namespace whi_motion_interface
             imu_inst_ = std::make_unique<ImuWit>(node_handle_, module, port, baudrate, packLength, resetList);
         }
         imu_inst_->setPublishParams(frameId, dataTopic, magTopic, tempTopic);
+        imu_inst_->resetFlag(resetAtInitial);
 
         // providing the reset service
         srv_reset_ = std::make_unique<ros::ServiceServer>(node_handle_->advertiseService("imu_reset", &Imu::onServiceReset, this));
