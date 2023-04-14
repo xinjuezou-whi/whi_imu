@@ -1,12 +1,12 @@
 whi_imu:
   loop_hz: 50 # hz
-  frame_id: 'imu'
-  data_topic: 'imu_data'
-  mag_topic: 'mag_data'
-  temp_topic: 'temp_data'
+  frame_id: imu
+  data_topic: imu_data
+  mag_topic: mag_data
+  temp_topic: temp_data
   hardware_interface:
-    module: 'JY61P'
-    port: '/dev/imu'
+    module: JY61P
+    port: /dev/imu
     baudrate: 115200
     pack_length: 11
     # JY-61P is 0xff 0xaa 0x01 0x04 0x00 with unlock
