@@ -63,7 +63,7 @@ This configuration file should be included by the launch file. Update the name o
 ```
 
 ## Service
-It advertises service "imu_reset" for reset the yaw, which is helpfull at the stage of fully initialized
+It advertises service "imu_reset" for reset the yaw, which is helpfull at the stage of fully initialization
 
 ## Run
 Launch the whi_imu node with commands:
