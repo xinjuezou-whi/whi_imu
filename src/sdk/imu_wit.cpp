@@ -34,9 +34,24 @@ ImuWit::ImuWit(std::shared_ptr<ros::NodeHandle>& NodeHandle, const std::string& 
 	const std::shared_ptr<std::vector<int>> ResetYaw, const std::shared_ptr<std::vector<int>> Unlock/* = nullptr*/, int InstructionMinSpan/* = 5*/,
 	bool WithMagnetic/* = true*/, bool WithTemperature/* = false*/)
 	: ImuBase(NodeHandle), module_(Module)
-	, serial_port_(SerPort), baudrate_(Baudrate), pack_length_(PackLength), instruction_min_span_(1000 * InstructionMinSpan)
+	, serial_port_(SerPort), baudrate_(Baudrate), pack_length_(PackLength)
+	, instruction_min_span_(1000 * InstructionMinSpan), with_magnetic_(WithMagnetic), with_temperature_(WithTemperature)
 {
-	init(ResetYaw, Unlock, WithMagnetic, WithTemperature);
+	// unlock and reset yaw commands
+	if (ResetYaw)
+	{
+		for (auto it : *ResetYaw)
+		{
+			reset_yaw_.push_back((uint8_t)it);
+		}
+	}
+	if (Unlock)
+	{
+		for (auto it : *Unlock)
+		{
+			unlock_.push_back((uint8_t)it);
+		}
+	}
 
 #ifdef DEBUG
 	std::cout << "acc const " << 1 / 32768.00 * 16 * 9.8 << " const " << CONSTANT_ACC << std::endl;
@@ -64,6 +79,39 @@ ImuWit::~ImuWit()
 	if (pub_mag_)
 	{
 		pub_mag_->shutdown();
+	}
+}
+
+void ImuWit::setPublishParams(const std::string& FrameId, const std::string& DataTopic,
+	const std::string& MagTopic, const std::string& TempTopic)
+{
+	frame_id_.assign(FrameId);
+	data_topic_.assign(DataTopic);
+	mag_topic_.assign(MagTopic);
+	temp_topic_.assign(TempTopic);
+
+	reconfigPub();
+}
+
+bool ImuWit::init(bool ResetAtInitial/* = false*/)
+{
+	reset_ = ResetAtInitial;
+	// serial
+	try
+	{
+		serial_inst_ = std::make_unique<serial::Serial>(serial_port_, baudrate_, serial::Timeout::simpleTimeout(500));
+		if (reset_)
+		{
+			reset();
+		}
+
+		return true;
+	}
+	catch (serial::IOException& e)
+	{
+		ROS_FATAL_STREAM_NAMED("failed to open serial %s", serial_port_.c_str());
+
+		return false;
 	}
 }
 
@@ -167,6 +215,20 @@ bool ImuWit::reset()
 	return true;
 }
 
+void ImuWit::reconfigPub()
+{
+	// publisher
+	pub_data_ = std::make_unique<ros::Publisher>(node_handle_->advertise<sensor_msgs::Imu>(data_topic_, 10));
+	if (with_magnetic_)
+	{
+		pub_mag_ = std::make_unique<ros::Publisher>(node_handle_->advertise<sensor_msgs::MagneticField>(mag_topic_, 10));
+	}
+	if (with_temperature_)
+	{
+		pub_temp_ = std::make_unique<ros::Publisher>(node_handle_->advertise<sensor_msgs::Temperature>(temp_topic_, 10));
+	}
+}
+
 void ImuWit::extract2Array(const std::string& Str, std::vector<std::string>& Array, const char Sep/* = '*'*/)
 {
 	size_t sepPos = Str.find(Sep);
@@ -203,51 +265,6 @@ void ImuWit::convert2Hex(std::vector<std::string>& Array, std::vector<uint8_t>& 
 		int byte = 0;
 		converter >> byte;
 		HexArray.push_back(uint8_t(byte & 0xFF));
-	}
-}
-
-void ImuWit::init(const std::shared_ptr<std::vector<int>> ResetYaw, const std::shared_ptr<std::vector<int>> Unlock,
-	bool WithMagnetic, bool WithTemperature)
-{
-	// unlock and reset yaw commands
-	if (ResetYaw)
-	{
-		for (auto it : *ResetYaw)
-		{
-			reset_yaw_.push_back((uint8_t)it);
-		}
-	}
-	if (Unlock)
-	{
-		for (auto it : *Unlock)
-		{
-			unlock_.push_back((uint8_t)it);
-		}
-	}
-
-	// publisher
-	pub_data_ = std::make_unique<ros::Publisher>(node_handle_->advertise<sensor_msgs::Imu>(data_topic_, 10));
-	if (WithMagnetic)
-	{
-		pub_mag_ = std::make_unique<ros::Publisher>(node_handle_->advertise<sensor_msgs::MagneticField>(mag_topic_, 10));
-	}
-	if (WithTemperature)
-	{
-		pub_temp_ = std::make_unique<ros::Publisher>(node_handle_->advertise<sensor_msgs::Temperature>(temp_topic_, 10));
-	}
-
-	// serial
-	try
-	{
-		serial_inst_ = std::make_unique<serial::Serial>(serial_port_, baudrate_, serial::Timeout::simpleTimeout(500));
-		if (reset_)
-		{
-			reset();
-		}
-	}
-	catch (serial::IOException& e)
-	{
-		ROS_FATAL_STREAM_NAMED("failed to open serial %s", serial_port_.c_str());
 	}
 }
 

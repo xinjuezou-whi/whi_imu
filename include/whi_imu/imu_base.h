@@ -23,12 +23,13 @@ class ImuBase
 {
 public:
 	ImuBase() = delete;
-	ImuBase(std::shared_ptr<ros::NodeHandle>& NodeHandle);
+	ImuBase(std::shared_ptr<ros::NodeHandle>& NodeHandle) : node_handle_(NodeHandle) {};
 	virtual ~ImuBase() = default;
 
 public:
-	void setPublishParams(const std::string& FrameId, const std::string& DataTopic, const std::string& MagTopic, const std::string& TempTopic);
-	void resetFlag(bool Flag);
+	virtual void setPublishParams(const std::string& FrameId, const std::string& DataTopic,
+		const std::string& MagTopic, const std::string& TempTopic) = 0;
+	virtual bool init(bool ResetAtInitial = false) = 0;
 	virtual void read2Publish() = 0;
 	virtual bool reset() = 0;
 
