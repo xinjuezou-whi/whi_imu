@@ -1,8 +1,8 @@
 # whi_imu
-This package is the hardware driver of IMU for ROS. It currently supports the JY60/60P, and JY901 of WIT Motion. Since it is a general IMU driver package and will be extended to support other IMU products, all specific product instances are derived from base class ImuBase. Each product has its own parameters configuration file which would be included by its launch file.
+This package is the hardware driver of IMU for ROS. It currently supports the JY61/61P and JY901 of WIT Motion. Since it is a general IMU driver package and will be extended to support other IMU products, all specific product instances are derived from the base class ImuBase. Each product has its own parameters configuration file which would be included in its launch file.
 
 ## Prerequisites
-The products relying on serial to communicate need serial package. This package leverages the serial package of ROS, so please first install it with belowing commands:
+The products relying on serial to communicate need serial package. This package leverages the serial package of ROS, so please first install it with the following commands:
 ```
 sudo apt install ros-<ros distro>-serial
 ```
@@ -22,7 +22,7 @@ source ~/catkin_workspace/devel/setup.bash
 ```
 
 ## Parameters Configuration
-Yaml file is used to bearing the parameters including common ones and specified ones. Each product has its own configuration file. Belowing is an example of config file:
+Yaml file is used to bear the parameters including common and specified ones. Each product has its own configuration file. Below is an example of config file:
 ```
 whi_imu:
   loop_hz: 50 # hz
@@ -43,7 +43,7 @@ whi_imu:
     with_temperature: false
 ```
 
-There are three major parts need your attention:
+There are three major parts that need your attention:
 The first is to configure the frame ID to meet your TF tree:
 - frame_id: the frame ID of the IMU in your TF tree 
 
@@ -56,14 +56,14 @@ Then the last, configure the serial communication params to meet your IMU's sett
 - device port: the serial port of your IMU
 - baudrate: the serial baudrate of your IMU
 
-This configuration file should be included by the launch file. Update the name of yaml file belowing the line of "params" with the one of corresponding product, like the belowing example the product is specified as JY61P: 
+This configuration file should be included in the launch file. Update the name of yaml file below the line of "params" with one of the corresponding products, like the bellowing example the product is specified as JY61P: 
 ```
   <!-- params -->
   <rosparam file="$(find whi_imu)/config/imu_hardware_jy61p.yaml" command="load"/>
 ```
 
 ## Service
-It advertises service "imu_reset" for reset the yaw, which is helpfull at the stage of fully initialization
+It advertises the service "imu_reset" for resetting the yaw, which is helpful at the stage of full initialization
 
 ## Run
 Launch the whi_imu node with commands:
@@ -71,7 +71,7 @@ Launch the whi_imu node with commands:
 cd ~/catkin_workspace/
 roslaunch whi_imu whi_imu.launch
 ```
-Or with reset flag to set yaw as zero:
+Or with a reset flag to set yaw as zero:
 ```
 roslaunch whi_imu whi_imu.launch reset:=true
 ```
