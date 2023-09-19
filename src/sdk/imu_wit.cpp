@@ -303,9 +303,11 @@ void ImuWit::fetchData(unsigned char* Data, size_t Length)
 			angle_.r = raw[0] * CONSTANT_ANGLE;
 			angle_.p = raw[1] * CONSTANT_ANGLE;
 			angle_.y = raw[2] * CONSTANT_ANGLE;
-#ifdef DEBUG
-			printf("yaw %.2f\n", angle_.y);
-#endif
+
+			if (debug_yaw_)
+			{
+				printf("yaw %.2f\n", angle_.y);
+			}
 			break;
 		case 0x54:
 			memcpy(&raw, &head[2], 8);

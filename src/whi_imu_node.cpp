@@ -33,12 +33,13 @@ void signalHandler(int Signal)
 int main(int argc, char** argv)
 {
 	/// node version and copyright announcement
-	std::cout << "\nWHI imu VERSION 00.09" << std::endl;
+	std::cout << "\nWHI imu VERSION 00.09.1" << std::endl;
 	std::cout << "Copyright © 2022-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
 	/// ros infrastructure
-	ros::init(argc, argv, "whi_imu");
-	auto nodeHandle = std::make_shared<ros::NodeHandle>();
+	const std::string nodeName("whi_imu"); 
+	ros::init(argc, argv, nodeName);
+	auto nodeHandle = std::make_shared<ros::NodeHandle>(nodeName);
 
 	/// node logic
 	auto imu = std::make_unique<whi_motion_interface::Imu>(nodeHandle);
@@ -66,7 +67,7 @@ int main(int argc, char** argv)
 	spinner.spin();
 #endif
 
-	std::cout << "whi_imu exited" << std::endl;
+	std::cout << nodeName << " exited" << std::endl;
 
 	return 0;
 }

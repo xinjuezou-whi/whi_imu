@@ -30,6 +30,7 @@ public:
 	virtual void setPublishParams(const std::string& FrameId, const std::string& DataTopic,
 		const std::string& MagTopic, const std::string& TempTopic) = 0;
 	virtual bool init(bool ResetAtInitial = false) = 0;
+	void debugYaw(bool Flag) { debug_yaw_ = Flag; };
 	virtual void read2Publish() = 0;
 	virtual bool reset() = 0;
 
@@ -43,4 +44,5 @@ protected:
 	std::unique_ptr<ros::Publisher> pub_mag_{ nullptr };
 	std::unique_ptr<ros::Publisher> pub_temp_{ nullptr };
 	bool reset_{ false };
+	bool debug_yaw_{ false };
 };

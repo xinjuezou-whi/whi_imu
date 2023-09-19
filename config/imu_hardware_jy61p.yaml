@@ -15,3 +15,4 @@ whi_imu:
     instruction_min_span: 5 # unit millisecond
     with_magnetic: true
     with_temperature: false
+  debug_yaw: false
