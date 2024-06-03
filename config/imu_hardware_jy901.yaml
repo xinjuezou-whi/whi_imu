@@ -1,6 +1,6 @@
 whi_imu:
   loop_hz: 50 # hz
-  frame_id: imu
+  frame_id: $(arg robot_name)/imu
   data_topic: imu_data
   mag_topic: mag_data
   temp_topic: temp_data
