@@ -275,8 +275,14 @@ void ImuWit::fetchData(unsigned char* Data, size_t Length)
 	{
 		if (head[0] != 0x55)
 		{
-			head++;
-			continue;
+			if (++head < (Data + Length - pack_length_))
+			{
+				continue;
+			}
+			else
+			{
+				break;
+			}
 		}
 
 		int16_t raw[4] = { 0, 0, 0, 0 };

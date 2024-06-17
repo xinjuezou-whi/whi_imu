@@ -33,8 +33,8 @@ void signalHandler(int Signal)
 int main(int argc, char** argv)
 {
 	/// node version and copyright announcement
-	std::cout << "\nWHI imu VERSION 00.09.1" << std::endl;
-	std::cout << "Copyright © 2022-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
+	std::cout << "\nWHI imu VERSION 00.10" << std::endl;
+	std::cout << "Copyright © 2022-2025 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
 	/// ros infrastructure
 	const std::string nodeName("whi_imu"); 
