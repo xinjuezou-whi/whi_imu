@@ -67,7 +67,8 @@ namespace whi_motion_interface
         transform(module.begin(), module.end(), module.begin(), ::tolower);
         if (module == type_str[WIT_JY61P] || module == type_str[WIT_JY901] )
         {
-            imu_inst_ = std::make_unique<ImuWit>(node_handle_, module, port, baudrate, packLength, resetList, unlockList, instructionMinSpan, withMag, withTemp);
+            imu_inst_ = std::make_unique<ImuWit>(node_handle_,
+                module, port, baudrate, packLength, resetList, unlockList, instructionMinSpan, withMag, withTemp);
         }
         else
         {
@@ -80,12 +81,14 @@ namespace whi_motion_interface
 		imu_inst_->debugYaw(debugYaw);
 
         // providing the reset service
-        srv_reset_ = std::make_unique<ros::ServiceServer>(node_handle_->advertiseService("imu_reset", &Imu::onServiceReset, this));
+        srv_reset_ = std::make_unique<ros::ServiceServer>(node_handle_->advertiseService("imu_reset",
+            &Imu::onServiceReset, this));
 
         // spinner
         node_handle_->param("loop_hz", loop_hz_, 10.0);
         ros::Duration updateFreq = ros::Duration(1.0 / loop_hz_);
-        non_realtime_loop_ = std::make_unique<ros::Timer>(node_handle_->createTimer(updateFreq, std::bind(&Imu::update, this, std::placeholders::_1)));
+        non_realtime_loop_ = std::make_unique<ros::Timer>(node_handle_->createTimer(updateFreq,
+            std::bind(&Imu::update, this, std::placeholders::_1)));
     }
 
     void Imu::update(const ros::TimerEvent& Event)
