@@ -271,7 +271,8 @@ void ImuWit::convert2Hex(std::vector<std::string>& Array, std::vector<uint8_t>& 
 void ImuWit::fetchData(unsigned char* Data, size_t Length)
 {
 	unsigned char* head = Data;
-	while (Length >= pack_length_)
+	size_t rollingLen = Length;
+	while (rollingLen >= pack_length_)
 	{
 		if (head[0] != 0x55)
 		{
@@ -334,7 +335,7 @@ void ImuWit::fetchData(unsigned char* Data, size_t Length)
 			break;
 		}
 
-		Length -= pack_length_;
+		rollingLen -= pack_length_;
 		head += pack_length_;
 	}
 }
