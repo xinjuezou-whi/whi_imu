@@ -1,0 +1,34 @@
+whi_imu:
+  loop_hz: 60 # hz
+  frame_id: $(arg robot_name)/imu
+  data_topic: imu_data
+  mag_topic: mag_data
+  temp_topic: temp_data
+  hardware_interface:
+    module: hwt6053_can
+    hardware_mode: canbus
+    usbcan:
+      baudrate: 250
+      bus_addr: 1
+      device_addr: 0x0050
+      is_remote: false    
+      is_extended: false
+      pack_length: 8
+      unlock: [0xff, 0xaa, 0x69, 0x88, 0xb5]
+      reset_yaw: [0xff, 0xaa, 0x01, 0x04, 0x00]
+      instruction_min_span: 5
+      with_magnetic: false
+      with_temperature: false   
+    canbus:
+      baudrate: 250
+      bus_addr: can1
+      device_addr: 0x0050
+      is_remote: false    
+      is_extended: false
+      pack_length: 8
+      unlock: [0xff, 0xaa, 0x69, 0x88, 0xb5]
+      reset_yaw: [0xff, 0xaa, 0x01, 0x04, 0x00]
+      instruction_min_span: 5
+      with_magnetic: false
+      with_temperature: false      
+  debug_yaw: false

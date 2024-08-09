@@ -5,18 +5,20 @@ Features:
 - abstract imu interfaces
 - xxx
 
-Written by Xinjue Zou, xinjue.zou@outlook.com
+Written by Xinjue Zou, xinjue.zou.whi@gmail.com
 
-GNU General Public License, check LICENSE for more information.
+Apache License Version 2.0, check LICENSE for more information.
 All text above must be included in any redistribution.
 
 ******************************************************************/
 #include "whi_imu/whi_imu.h"
 #include "whi_imu/imu_wit.h"
+#include "whi_imu/imu_wit_usbcan.h"
+#include "whi_imu/imu_wit_canbus.h"
 
 namespace whi_motion_interface
 {
-    const char* Imu::type_str[TYPE_SUM] = { "jy61p", "jy901" };
+    const char* Imu::type_str[TYPE_SUM] = { "jy61p", "jy901" ,"hwt6053_can" };
 
     Imu::Imu(std::shared_ptr<ros::NodeHandle>& NodeHandle)
         : node_handle_(NodeHandle)
@@ -55,7 +57,9 @@ namespace whi_motion_interface
         int instructionMinSpan = 5;
         bool withMag = false;
         bool withTemp = false;
+        std::string hardware_mode;
         node_handle_->param("hardware_interface/module", module, std::string(type_str[WIT_JY61P]));
+        node_handle_->param("hardware_interface/hardware_mode", hardware_mode, std::string("usbcan"));
         node_handle_->param("hardware_interface/port", port, std::string("/dev/ttyUSB0"));
         node_handle_->param("hardware_interface/baudrate", baudrate, 9600);
         node_handle_->param("hardware_interface/pack_length", packLength, 11);
@@ -65,10 +69,46 @@ namespace whi_motion_interface
         node_handle_->param("hardware_interface/with_magnetic", withMag, true);
         node_handle_->param("hardware_interface/with_temperature", withTemp, false);
         transform(module.begin(), module.end(), module.begin(), ::tolower);
+
         if (module == type_str[WIT_JY61P] || module == type_str[WIT_JY901] )
         {
             imu_inst_ = std::make_unique<ImuWit>(node_handle_,
                 module, port, baudrate, packLength, resetList, unlockList, instructionMinSpan, withMag, withTemp);
+        }
+        else if (module == type_str[WIT_HWT6053_CAN])
+        {
+            bool IsRemote = false;
+            bool IsExtended = false;
+            int deviceAddr = 0;
+            std::shared_ptr<std::vector<int>> canresetList = std::make_shared<std::vector<int>>();
+            std::shared_ptr<std::vector<int>> canunlockList = std::make_shared<std::vector<int>>();    
+
+            node_handle_->param("hardware_interface/" + hardware_mode + "/port", port, std::string("/dev/ttyUSB0"));
+            node_handle_->param("hardware_interface/" + hardware_mode + "/baudrate", baudrate, 500);
+            node_handle_->param("hardware_interface/" + hardware_mode + "/pack_length", packLength, 11);
+            node_handle_->param("hardware_interface/" + hardware_mode + "/device_addr", deviceAddr, 0);
+            node_handle_->param("hardware_interface/" + hardware_mode + "/is_remote", IsRemote, false);
+            node_handle_->param("hardware_interface/" + hardware_mode + "/is_extended", IsExtended, false);
+            node_handle_->getParam("hardware_interface/" + hardware_mode + "/reset_yaw", *canresetList);
+            node_handle_->getParam("hardware_interface/" + hardware_mode + "/unlock", *canunlockList);
+            node_handle_->param("hardware_interface/" + hardware_mode + "/instruction_min_span", instructionMinSpan, 5);
+            node_handle_->param("hardware_interface/" + hardware_mode + "/with_magnetic", withMag, true);
+            node_handle_->param("hardware_interface/" + hardware_mode + "/with_temperature", withTemp, false);
+
+            if (hardware_mode == "usbcan")
+            {
+                int busAddr = 0;
+                node_handle_->param("hardware_interface/" + hardware_mode + "/bus_addr", busAddr, 0);
+                imu_inst_ = std::make_unique<ImuWitUsbcan>(node_handle_, module, busAddr, deviceAddr, baudrate, packLength, 
+                    canresetList, canunlockList, instructionMinSpan, withMag, withTemp);
+            }
+            else if (hardware_mode == "canbus")
+            {
+                std::string busAddr;
+                node_handle_->param("hardware_interface/" + hardware_mode + "/bus_addr", busAddr, std::string("can0"));
+                imu_inst_ = std::make_unique<ImuWitCanbus>(node_handle_, module, busAddr, deviceAddr, packLength,
+                    canresetList, canunlockList, instructionMinSpan, withMag, withTemp);
+            }
         }
         else
         {

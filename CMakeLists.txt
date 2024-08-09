@@ -160,6 +160,8 @@ add_dependencies(${PROJECT_NAME}_node imu_hardware)
 target_link_libraries(${PROJECT_NAME}_node
   imu_hardware
   ${catkin_LIBRARIES}
+  controlcan
+  yaml-cpp  
 )
 
 #############
