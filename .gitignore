@@ -19,7 +19,6 @@
 *.ipch
 
 # Compiled Dynamic libraries
-*.so
 *.dylib
 *.dll
 

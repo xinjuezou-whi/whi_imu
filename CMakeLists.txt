@@ -121,6 +121,10 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
+link_directories(3rd_lib/controlcan/64bit
+  ${catkin_LIB_DIRS}
+)
+
 ## Declare a C++ library
 FILE(GLOB WHI_SDK_SRC
  "src/sdk/*.cpp"
