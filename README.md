@@ -4,7 +4,7 @@ This package is the hardware driver of IMU for ROS. It currently supports the JY
 ## Prerequisites
 The products relying on serial to communicate need serial package. This package leverages the serial package of ROS, so please first install it with the following commands:
 ```
-sudo apt install ros-<ros distro>-serial
+git clone https://github.com/xinjuezou-whi/serial.git
 ```
 
 ## Build Up
@@ -25,22 +25,24 @@ source ~/catkin_workspace/devel/setup.bash
 Yaml file is used to bear the parameters including common and specified ones. Each product has its own configuration file. Below is an example of config file:
 ```
 whi_imu:
-  loop_hz: 50 # hz
-  frame_id: 'imu'
-  data_topic: 'imu_data'
-  mag_topic: 'mag_data'
-  temp_topic: 'temp_data'
-  hardware_interface:
-    module: 'JY61P'
-    port: '/dev/imu'
-    baudrate: 115200
-    pack_length: 11
-    # JY-61P is 0xff 0xaa 0x01 0x04 0x00 with unlock
-    unlock: [0xff, 0xaa, 0x69, 0x88, 0xb5]
-    reset_yaw: [0xff, 0xaa, 0x01, 0x04, 0x00]
-    instruction_min_span: 5 # unit millisecond
-    with_magnetic: true
-    with_temperature: false
+  ros__parameters:
+    frequency: 50 # hz
+    frame_id: imu
+    data_topic: imu_data
+    mag_topic: mag_data
+    temp_topic: temp_data
+    hardware_interface:
+      module: JY61P
+      port: /dev/imu
+      baudrate: 115200
+      pack_length: 11
+      # JY-61P is 0xff 0xaa 0x01 0x04 0x00 with unlock
+      unlock: [0xff, 0xaa, 0x69, 0x88, 0xb5]
+      reset_yaw: [0xff, 0xaa, 0x01, 0x04, 0x00]
+      instruction_min_span: 5 # unit millisecond
+      with_magnetic: true
+      with_temperature: false
+    debug_yaw: false
 ```
 
 There are three major parts that need your attention:
@@ -69,11 +71,11 @@ It advertises the service "imu_reset" for resetting the yaw, which is helpful at
 Launch the whi_imu node with commands:
 ```
 cd ~/catkin_workspace/
-roslaunch whi_imu whi_imu.launch
+roslaunch whi_imu launch.py
 ```
 Or with a reset flag to set yaw as zero:
 ```
-roslaunch whi_imu whi_imu.launch reset:=true
+roslaunch whi_imu launch.py reset:=true
 ```
 
 Then in another terminal, use the rostopic command to check its outputs:
