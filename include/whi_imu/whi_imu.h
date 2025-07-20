@@ -1,5 +1,5 @@
 /******************************************************************
-imu interface under ROS 1
+imu interface under ROS 2
 
 Features:
 - abstract imu interfaces
@@ -12,16 +12,17 @@ All text above must be included in any redistribution.
 
 Changelog:
 2022-04-04: Initial version
-2022-xx-xx: xxx
+2025-07-20: Migrate from ROS 1
+2025-xx-xx: xxx
 ******************************************************************/
 #pragma once
-#include <ros/ros.h>
-#include <std_srvs/Trigger.h>
+#include <rclcpp/rclcpp.hpp>
+#include <std_srvs/srv/trigger.hpp>
 #include <memory>
 
 #include "imu_base.h"
 
-namespace whi_motion_interface
+namespace whi_imu
 {
 	class Imu
 	{
@@ -30,20 +31,19 @@ namespace whi_motion_interface
         static const char* type_str[TYPE_SUM];
 
     public:
-        Imu(std::shared_ptr<ros::NodeHandle>& NodeHandle);
+        Imu(std::shared_ptr<rclcpp::Node>& NodeHandle);
         ~Imu();
 
     protected:
         void init();
-        void update(const ros::TimerEvent & Event);
-        bool onServiceReset(std_srvs::Trigger::Request& Req, std_srvs::Trigger::Response& Res);
+        void update();
+        bool onServiceReset(const std::shared_ptr<std_srvs::srv::Trigger::Request> Request,
+            std::shared_ptr<std_srvs::srv::Trigger::Response> Response);
 
     protected:
-        std::shared_ptr<ros::NodeHandle> node_handle_{ nullptr };
-        std::unique_ptr<ros::Timer> non_realtime_loop_{ nullptr };
-        ros::Duration elapsed_time_;
-        double loop_hz_{ 10.0 };
+        std::shared_ptr<rclcpp::Node> node_handle_{ nullptr };
+        rclcpp::TimerBase::SharedPtr non_realtime_loop_{ nullptr };
         std::unique_ptr<ImuBase> imu_inst_{ nullptr };
-        std::unique_ptr<ros::ServiceServer> srv_reset_{ nullptr };
+        rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_reset_{ nullptr };
 	};
 }

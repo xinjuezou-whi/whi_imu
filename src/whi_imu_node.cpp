@@ -13,7 +13,8 @@ All text above must be included in any redistribution.
 
 Changelog:
 2022-04-04: Initial version
-2022-xx-xx: xxx
+2025-07-20: Migrate from ROS 1
+2025-xx-xx: xxx
 ******************************************************************/
 #include <iostream>
 #include <signal.h>
@@ -33,38 +34,42 @@ void signalHandler(int Signal)
 int main(int argc, char** argv)
 {
 	/// node version and copyright announcement
-	std::cout << "\nWHI imu VERSION 00.10.1" << std::endl;
-	std::cout << "Copyright © 2022-2025 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
+	std::cout << "\nWHI imu VERSION 02.10.1" << std::endl;
+	std::cout << "Copyright © 2022-2026 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
 	/// ros infrastructure
-	const std::string nodeName("whi_imu"); 
-	ros::init(argc, argv, nodeName);
-	auto nodeHandle = std::make_shared<ros::NodeHandle>(nodeName);
+    rclcpp::init(argc, argv);
+
+    // create node
+    const std::string nodeName("whi_imu");
+	auto nodeHandle = std::make_shared<rclcpp::Node>(nodeName);
 
 	/// node logic
-	auto imu = std::make_unique<whi_motion_interface::Imu>(nodeHandle);
+	auto imu = std::make_unique<whi_imu::Imu>(nodeHandle);
 
 	// override the default ros sigint handler, with this override the shutdown will be gracefull
     // NOTE: this must be set after the NodeHandle is created
 	signal(SIGINT, signalHandler);
 	functionWrapper = [&](int)
 	{
-		imu = nullptr;
+		imu.reset();
 
 		// all the default sigint handler does is call shutdown()
-		ros::shutdown();
+        if (rclcpp::ok())
+        {
+            rclcpp::shutdown();
+        }
 	};
 
 	/// ros spinner
 	// NOTE: We run the ROS loop in a separate thread as external calls such as
 	// service callbacks to load controllers can block the (main) control loop
 #if ASYNC
-	ros::AsyncSpinner spinner(0);
-	spinner.start();
-	ros::waitForShutdown();
+    auto executor = std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
+    executor->add_node(nodeHandle);
+    executor->spin();  // blocking until shutdown
 #else
-	ros::MultiThreadedSpinner spinner(0);
-	spinner.spin();
+    rclcpp::spin(nodeHandle);
 #endif
 
 	std::cout << nodeName << " exited" << std::endl;

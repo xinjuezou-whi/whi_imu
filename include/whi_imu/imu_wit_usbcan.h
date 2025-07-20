@@ -9,41 +9,43 @@ Prerequisites:
 -
 
 Written by Yue Zhou, sevendull@163.com
+           Xinjue Zou, xinjue.zou@outlook.com
 
 GNU General Public License, check LICENSE for more information.
 All text above must be included in any redistribution.
 
 Changelog:
 2024-08-09: Initial version
-2024-xx-xx: xxx
+2025-07-20: Migrate from ROS 1 by Xinjue
+2025-xx-xx: xxx
 ******************************************************************/
 #pragma once
 #include "imu_base.h"
 #include "usbcan.h"
+
+#include <tf2/LinearMath/Quaternion.h>
+
 #include <vector>
 #include <thread>
 #include <mutex>
-#include <tf2/LinearMath/Quaternion.h>
+
 class ImuWitUsbcan : public ImuBase
 {
 public:
 	ImuWitUsbcan() = delete;
-	ImuWitUsbcan(std::shared_ptr<ros::NodeHandle>& NodeHandle, const std::string& Module, 
+	ImuWitUsbcan(std::shared_ptr<rclcpp::Node>& NodeHandle, const std::string& Module, 
 		uint8_t BusAddr, uint16_t DeviceAddr, int Baudrate, unsigned int PackLength,
-		const std::shared_ptr<std::vector<int>> ResetYaw, const std::shared_ptr<std::vector<int>> Unlock = nullptr,  int InstructionMinSpan = 5,
-		bool WithMagnetic = true, bool WithTemperature = false);
+		const std::shared_ptr<std::vector<int>> ResetYaw, const std::shared_ptr<std::vector<int>> Unlock = nullptr,
+		int InstructionMinSpan = 5, bool WithMagnetic = true, bool WithTemperature = false);
 	~ImuWitUsbcan() override;
 
 public:
 	// override
-	void setPublishParams(const std::string& FrameId, const std::string& DataTopic,
-		const std::string& MagTopic, const std::string& TempTopic) override;
 	bool init(bool ResetAtInitial = false) override;
 	void read2Publish() override;
 	bool reset() override;
 
 protected:
-	void reconfigPub();
 	void threadReadCan();
 
 protected:
@@ -94,13 +96,12 @@ protected:
 	Angle angle_;
 	Triple magnetic_;
 	Quat quaternion_;
-	bool with_magnetic_{ true };
-	bool with_temperature_{ true };
 	std::thread th_read_;
 	std::atomic_bool terminated_{ false };
 	uint8_t bus_addr_;
 	std::shared_ptr<UsbCan> usbcan_;
 	tf2::Quaternion convertQuaternion_;
+
 protected:
 	static const double CONSTANT;
 	static const double CONSTANT_ACC;

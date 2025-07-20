@@ -1,24 +1,40 @@
+/******************************************************************
+imu driver instance for WIT brand
+
+Features:
+- imu operation logic for usbcan hardware
+- xxx
+
+Prerequisites:
+-
+
+Written by Yue Zhou, sevendull@163.com
+           Xinjue Zou, xinjue.zou@outlook.com
+
+GNU General Public License, check LICENSE for more information.
+All text above must be included in any redistribution.
+
+******************************************************************/
 #include "whi_imu/imu_wit_usbcan.h"
-#include <sensor_msgs/Imu.h>
-#include <sensor_msgs/MagneticField.h>
-#include <sensor_msgs/Temperature.h>
-#include <cstring>
+
 #include <angles/angles.h>
 
-#define WHI_PI (std::atan(1.0) * 4.0)
+#include <cstring>
+#include <unistd.h>
+#include <iomanip>
 
 const double ImuWitUsbcan::CONSTANT = 32768.0;
 const double ImuWitUsbcan::CONSTANT_ACC = 16.0 * 9.8 / ImuWitUsbcan::CONSTANT;
 const double ImuWitUsbcan::CONSTANT_GYRO = 2000.0 * WHI_PI / (180.0 * ImuWitUsbcan::CONSTANT);
 const double ImuWitUsbcan::CONSTANT_ANGLE = WHI_PI / ImuWitUsbcan::CONSTANT;
 const double ImuWitUsbcan::CONSTANT_QUATERNION = 1.0 / ImuWitUsbcan::CONSTANT;
-ImuWitUsbcan::ImuWitUsbcan(std::shared_ptr<ros::NodeHandle>& NodeHandle, const std::string& Module,
+ImuWitUsbcan::ImuWitUsbcan(std::shared_ptr<rclcpp::Node>& NodeHandle, const std::string& Module,
 	uint8_t BusAddr, uint16_t DeviceAddr, int Baudrate, unsigned int PackLength,
-	const std::shared_ptr<std::vector<int>> ResetYaw, const std::shared_ptr<std::vector<int>> Unlock,  int InstructionMinSpan,
-		bool WithMagnetic, bool WithTemperature)
-	: ImuBase(NodeHandle), module_(Module), bus_addr_(BusAddr), device_addr_(DeviceAddr), pack_length_(PackLength)
+	const std::shared_ptr<std::vector<int>> ResetYaw, const std::shared_ptr<std::vector<int>> Unlock,
+	int InstructionMinSpan, bool WithMagnetic, bool WithTemperature)
+	: ImuBase(NodeHandle, WithMagnetic, WithTemperature), module_(Module), bus_addr_(BusAddr), device_addr_(DeviceAddr), pack_length_(PackLength)
 	, usbcan_(std::make_shared<UsbCan>(bus_addr_, Baudrate, false, false))
-	, instruction_min_span_(1000 * InstructionMinSpan), with_magnetic_(WithMagnetic), with_temperature_(WithTemperature)
+	, instruction_min_span_(1000 * InstructionMinSpan)
 {
 	// unlock and reset yaw commands
 	if (ResetYaw)
@@ -59,48 +75,10 @@ ImuWitUsbcan::~ImuWitUsbcan()
 		th_read_.join();
 	}
 
-	if (pub_data_)
-	{
-		pub_data_->shutdown();
-	}
-	if (pub_mag_)
-	{
-		pub_mag_->shutdown();
-	}
-	if (pub_mag_)
-	{
-		pub_mag_->shutdown();
-	}
-
 	size_t ref = usbcan_->decreaseReference();
 	if (usbcan_ && usbcan_->isOpen() && ref == 0)
 	{
 		usbcan_->close();
-	}
-}
-
-void ImuWitUsbcan::setPublishParams(const std::string& FrameId, const std::string& DataTopic,
-	const std::string& MagTopic, const std::string& TempTopic)
-{
-	frame_id_.assign(FrameId);
-	data_topic_.assign(DataTopic);
-	mag_topic_.assign(MagTopic);
-	temp_topic_.assign(TempTopic);
-
-	reconfigPub();
-}
-
-void ImuWitUsbcan::reconfigPub()
-{
-	// publisher
-	pub_data_ = std::make_unique<ros::Publisher>(node_handle_->advertise<sensor_msgs::Imu>(data_topic_, 10));
-	if (with_magnetic_)
-	{
-		pub_mag_ = std::make_unique<ros::Publisher>(node_handle_->advertise<sensor_msgs::MagneticField>(mag_topic_, 10));
-	}
-	if (with_temperature_)
-	{
-		pub_temp_ = std::make_unique<ros::Publisher>(node_handle_->advertise<sensor_msgs::Temperature>(temp_topic_, 10));
 	}
 }
 
@@ -114,15 +92,11 @@ bool ImuWitUsbcan::init(bool ResetAtInitial/* = false*/)
 	return usbcan_ ? true : false;
 }
 
-
 void ImuWitUsbcan::read2Publish()
 {
-	static unsigned int seq = 0;
-
-	sensor_msgs::Imu imuData;
-	imuData.header.stamp = ros::Time::now();
+	sensor_msgs::msg::Imu imuData;
+	imuData.header.stamp = node_handle_->get_clock()->now();
 	imuData.header.frame_id = frame_id_;
-	imuData.header.seq = seq;
 
 	imuData.linear_acceleration.x = acc_.x;
 	imuData.linear_acceleration.y = acc_.y;
@@ -146,10 +120,9 @@ void ImuWitUsbcan::read2Publish()
 
 	if (pub_mag_)
 	{
-		sensor_msgs::MagneticField magData;
+		sensor_msgs::msg::MagneticField magData;
 		magData.header.stamp = imuData.header.stamp;
 		magData.header.frame_id = imuData.header.frame_id;
-		magData.header.seq = seq;
 
 		magData.magnetic_field.x = magnetic_.x;
 		magData.magnetic_field.y = magnetic_.y;
@@ -160,16 +133,13 @@ void ImuWitUsbcan::read2Publish()
 	}
 	if (pub_temp_)
 	{
-		sensor_msgs::Temperature tempData;
+		sensor_msgs::msg::Temperature tempData;
 		tempData.header.stamp = imuData.header.stamp;
 		tempData.header.frame_id = imuData.header.frame_id;
-		tempData.header.seq = seq;
 		//tempData.temperature = (double)record.temperature;
 
 		pub_temp_->publish(tempData);
 	}
-
-	++seq;
 }
 
 bool ImuWitUsbcan::reset()
@@ -199,8 +169,6 @@ bool ImuWitUsbcan::reset()
 
 void ImuWitUsbcan::threadReadCan()
 {
-	static unsigned int seq = 0;
-
 	const int DATA_LEN = 8;
 	const int DATA_LEN_MIN = 4;
     unsigned int id = 0;
@@ -245,7 +213,7 @@ void ImuWitUsbcan::threadReadCan()
 						anglepack |= 0x100;
 						if (debug_yaw_)
 						{
-							printf("yaw %.2f\n", angle_.y);
+							std::cout << "yaw: " << std::fixed << std::setprecision(2) << angle_.y << std::endl;
 						}
 					}
 					if (anglepack == 0x111)

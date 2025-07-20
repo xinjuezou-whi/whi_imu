@@ -6,7 +6,8 @@ Features:
 - xxx
 
 Prerequisites:
-- sudo apt install ros-<ros distro>-serial
+- git clone https://github.com/xinjuezou-whi/serial.git
+  colcon build --symlink-install --packages-select serial
 
 Written by Xinjue Zou, xinjue.zou@outlook.com
 
@@ -16,26 +17,24 @@ All text above must be included in any redistribution.
 ******************************************************************/
 #include "whi_imu/imu_wit.h"
 
-#include <sensor_msgs/Imu.h>
-#include <sensor_msgs/MagneticField.h>
-#include <sensor_msgs/Temperature.h>
 #include <tf2/LinearMath/Quaternion.h>
-#include <cstring>
 
-#define WHI_PI (std::atan(1.0) * 4.0)
+#include <cstring>
+#include <unistd.h>
+#include <iomanip>
 
 const double ImuWit::CONSTANT = 32768.0;
 const double ImuWit::CONSTANT_ACC = 16.0 * 9.8 / ImuWit::CONSTANT;
 const double ImuWit::CONSTANT_GYRO = 2000.0 * WHI_PI / (180.0 * ImuWit::CONSTANT);
 const double ImuWit::CONSTANT_ANGLE = WHI_PI / ImuWit::CONSTANT;
 const double ImuWit::CONSTANT_QUATERNION = 1.0 / ImuWit::CONSTANT;
-ImuWit::ImuWit(std::shared_ptr<ros::NodeHandle>& NodeHandle, const std::string& Module,
+ImuWit::ImuWit(std::shared_ptr<rclcpp::Node>& NodeHandle, const std::string& Module,
 	const std::string& SerPort, unsigned int Baudrate, unsigned int PackLength,
 	const std::shared_ptr<std::vector<int>> ResetYaw, const std::shared_ptr<std::vector<int>> Unlock/* = nullptr*/, int InstructionMinSpan/* = 5*/,
 	bool WithMagnetic/* = true*/, bool WithTemperature/* = false*/)
-	: ImuBase(NodeHandle), module_(Module)
+	: ImuBase(NodeHandle, WithMagnetic, WithTemperature), module_(Module)
 	, serial_port_(SerPort), baudrate_(Baudrate), pack_length_(PackLength)
-	, instruction_min_span_(1000 * InstructionMinSpan), with_magnetic_(WithMagnetic), with_temperature_(WithTemperature)
+	, instruction_min_span_(1000 * InstructionMinSpan)
 {
 	// unlock and reset yaw commands
 	if (ResetYaw)
@@ -67,30 +66,6 @@ ImuWit::~ImuWit()
 	{
 		serial_inst_->close();
 	}
-
-	if (pub_data_)
-	{
-		pub_data_->shutdown();
-	}
-	if (pub_mag_)
-	{
-		pub_mag_->shutdown();
-	}
-	if (pub_mag_)
-	{
-		pub_mag_->shutdown();
-	}
-}
-
-void ImuWit::setPublishParams(const std::string& FrameId, const std::string& DataTopic,
-	const std::string& MagTopic, const std::string& TempTopic)
-{
-	frame_id_.assign(FrameId);
-	data_topic_.assign(DataTopic);
-	mag_topic_.assign(MagTopic);
-	temp_topic_.assign(TempTopic);
-
-	reconfigPub();
 }
 
 bool ImuWit::init(bool ResetAtInitial/* = false*/)
@@ -109,7 +84,8 @@ bool ImuWit::init(bool ResetAtInitial/* = false*/)
 	}
 	catch (serial::IOException& e)
 	{
-		ROS_FATAL_STREAM_NAMED("failed to open serial %s", serial_port_.c_str());
+		RCLCPP_FATAL(node_handle_->get_logger(),
+			"\033[1;31mfailed to open serial %s\033[0m", serial_port_.c_str());
 
 		return false;
 	}
@@ -117,8 +93,6 @@ bool ImuWit::init(bool ResetAtInitial/* = false*/)
 
 void ImuWit::read2Publish()
 {
-	static unsigned int seq = 0;
-
 	if (serial_inst_)
 	{
 		size_t count = serial_inst_->available();
@@ -128,10 +102,9 @@ void ImuWit::read2Publish()
 			size_t readNum = serial_inst_->read(rbuff, count);
 			fetchData(rbuff, readNum);
 
-			sensor_msgs::Imu imuData;
-			imuData.header.stamp = ros::Time::now();
+			sensor_msgs::msg::Imu imuData;
+			imuData.header.stamp = node_handle_->get_clock()->now();
 			imuData.header.frame_id = frame_id_;
-			imuData.header.seq = seq;
 
 			imuData.linear_acceleration.x = acc_.x;
 			imuData.linear_acceleration.y = acc_.y;
@@ -166,10 +139,9 @@ void ImuWit::read2Publish()
 
 			if (pub_mag_)
 			{
-				sensor_msgs::MagneticField magData;
+				sensor_msgs::msg::MagneticField magData;
 				magData.header.stamp = imuData.header.stamp;
 				magData.header.frame_id = imuData.header.frame_id;
-				magData.header.seq = seq;
 
 				magData.magnetic_field.x = magnetic_.x;
 				magData.magnetic_field.y = magnetic_.y;
@@ -180,16 +152,13 @@ void ImuWit::read2Publish()
 			}
 			if (pub_temp_)
 			{
-				sensor_msgs::Temperature tempData;
+				sensor_msgs::msg::Temperature tempData;
 				tempData.header.stamp = imuData.header.stamp;;
 				tempData.header.frame_id = imuData.header.frame_id;
-				tempData.header.seq = seq;
 				//tempData.temperature = (double)record.temperature;
 
 				pub_temp_->publish(tempData);
 			}
-
-			++seq;
 		}
 	}
 }
@@ -213,20 +182,6 @@ bool ImuWit::reset()
 	}
 	
 	return true;
-}
-
-void ImuWit::reconfigPub()
-{
-	// publisher
-	pub_data_ = std::make_unique<ros::Publisher>(node_handle_->advertise<sensor_msgs::Imu>(data_topic_, 10));
-	if (with_magnetic_)
-	{
-		pub_mag_ = std::make_unique<ros::Publisher>(node_handle_->advertise<sensor_msgs::MagneticField>(mag_topic_, 10));
-	}
-	if (with_temperature_)
-	{
-		pub_temp_ = std::make_unique<ros::Publisher>(node_handle_->advertise<sensor_msgs::Temperature>(temp_topic_, 10));
-	}
 }
 
 void ImuWit::extract2Array(const std::string& Str, std::vector<std::string>& Array, const char Sep/* = '*'*/)
@@ -313,7 +268,7 @@ void ImuWit::fetchData(unsigned char* Data, size_t Length)
 
 			if (debug_yaw_)
 			{
-				printf("yaw %.2f\n", angle_.y);
+				std::cout << "yaw: " << std::fixed << std::setprecision(2) << angle_.y << std::endl;
 			}
 			break;
 		case 0x54:

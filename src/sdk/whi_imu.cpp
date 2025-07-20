@@ -1,5 +1,5 @@
 /******************************************************************
-imu interface under ROS 1
+imu interface under ROS 2
 
 Features:
 - abstract imu interfaces
@@ -16,11 +16,11 @@ All text above must be included in any redistribution.
 #include "whi_imu/imu_wit_usbcan.h"
 #include "whi_imu/imu_wit_canbus.h"
 
-namespace whi_motion_interface
+namespace whi_imu
 {
     const char* Imu::type_str[TYPE_SUM] = { "jy61p", "jy901" ,"hwt6053_can" };
 
-    Imu::Imu(std::shared_ptr<ros::NodeHandle>& NodeHandle)
+    Imu::Imu(std::shared_ptr<rclcpp::Node>& NodeHandle)
         : node_handle_(NodeHandle)
     {
         init();
@@ -30,45 +30,61 @@ namespace whi_motion_interface
     {
         if (srv_reset_)
         {
-            srv_reset_->shutdown();
+            srv_reset_.reset();
         }
     }
 
     void Imu::init()
     {
         // reset param
-        bool resetAtInitial = false;
-        node_handle_->param("reset_z", resetAtInitial, false);
+        node_handle_->declare_parameter<bool>("reset_z", false);
+        bool resetAtInitial = node_handle_->get_parameter("reset_z").as_bool();
+
         // drivers
-        std::string frameId;
-        std::string dataTopic;
-        std::string magTopic;
-        std::string tempTopic;
-        node_handle_->param("frame_id", frameId, std::string("imu_link"));
-        node_handle_->param("data_topic", dataTopic, std::string("imu_data"));
-        node_handle_->param("mag_topic", magTopic, std::string("mag_data"));
-        node_handle_->param("temp_topic", tempTopic, std::string("temp_data"));
-        std::string module;
-        std::string port;
-        int baudrate = 0;
-        int packLength = 0;
-        std::shared_ptr<std::vector<int>> resetList = std::make_shared<std::vector<int>>();
-        std::shared_ptr<std::vector<int>> unlockList = std::make_shared<std::vector<int>>();
-        int instructionMinSpan = 5;
-        bool withMag = false;
-        bool withTemp = false;
-        std::string hardware_mode;
-        node_handle_->param("hardware_interface/module", module, std::string(type_str[WIT_JY61P]));
-        node_handle_->param("hardware_interface/hardware_mode", hardware_mode, std::string("usbcan"));
-        node_handle_->param("hardware_interface/port", port, std::string("/dev/ttyUSB0"));
-        node_handle_->param("hardware_interface/baudrate", baudrate, 9600);
-        node_handle_->param("hardware_interface/pack_length", packLength, 11);
-        node_handle_->getParam("hardware_interface/reset_yaw", *resetList);
-        node_handle_->getParam("hardware_interface/unlock", *unlockList);
-        node_handle_->param("hardware_interface/instruction_min_span", instructionMinSpan, 5);
-        node_handle_->param("hardware_interface/with_magnetic", withMag, true);
-        node_handle_->param("hardware_interface/with_temperature", withTemp, false);
+        node_handle_->declare_parameter<std::string>("frame_id", std::string("imu_link"));
+        auto frameId = node_handle_->get_parameter("frame_id").as_string();
+        node_handle_->declare_parameter<std::string>("data_topic", std::string("imu_data"));
+        auto dataTopic = node_handle_->get_parameter("data_topic").as_string();
+        node_handle_->declare_parameter<std::string>("mag_topic", std::string("mag_data"));
+        auto magTopic = node_handle_->get_parameter("mag_topic").as_string();
+        node_handle_->declare_parameter<std::string>("temp_topic", std::string("temp_data"));
+        auto tempTopic = node_handle_->get_parameter("temp_topic").as_string();
+
+        node_handle_->declare_parameter<std::string>("hardware_interface.module", std::string(type_str[WIT_JY61P]));
+        auto module = node_handle_->get_parameter("hardware_interface.module").as_string();
         transform(module.begin(), module.end(), module.begin(), ::tolower);
+
+        node_handle_->declare_parameter<std::string>("hardware_interface.hardware_mode", std::string("usbcan"));
+        auto hardwareMode = node_handle_->get_parameter("hardware_interface.hardware_mode").as_string();
+        node_handle_->declare_parameter<std::string>("hardware_interface.port", std::string("/dev/ttyUSB0"));
+        auto port = node_handle_->get_parameter("hardware_interface.port").as_string();
+        node_handle_->declare_parameter<int>("hardware_interface.baudrate", 9600);
+        int baudrate = node_handle_->get_parameter("hardware_interface.baudrate").as_int();
+        node_handle_->declare_parameter<int>("hardware_interface.pack_length", 11);
+        int packLength = node_handle_->get_parameter("hardware_interface.pack_length").as_int();
+
+        node_handle_->declare_parameter<std::vector<int64_t>>("hardware_interface.reset_yaw", std::vector<int64_t>());
+        auto reset = node_handle_->get_parameter("hardware_interface.reset_yaw").as_integer_array();
+        node_handle_->declare_parameter<std::vector<int64_t>>("hardware_interface.unlock", std::vector<int64_t>());
+        auto unlock = node_handle_->get_parameter("hardware_interface.unlock").as_integer_array();
+        std::shared_ptr<std::vector<int>> resetList = std::make_shared<std::vector<int>>();
+        for (const auto& it : reset)
+        {
+            resetList->push_back(int(it));
+        }
+        std::shared_ptr<std::vector<int>> unlockList = std::make_shared<std::vector<int>>();
+        for (const auto& it : unlock)
+        {
+            unlockList->push_back(int(it));
+        }
+        
+        node_handle_->declare_parameter<int>("hardware_interface.instruction_min_span", 5);
+        int instructionMinSpan = node_handle_->get_parameter("hardware_interface.instruction_min_span").as_int();
+
+        node_handle_->declare_parameter<bool>("hardware_interface.with_magnetic", true);
+        bool withMag = node_handle_->get_parameter("hardware_interface.with_magnetic").as_bool();
+        node_handle_->declare_parameter<bool>("hardware_interface.with_temperature", false);
+        bool withTemp = node_handle_->get_parameter("hardware_interface.with_temperature").as_bool();
 
         if (module == type_str[WIT_JY61P] || module == type_str[WIT_JY901] )
         {
@@ -77,35 +93,55 @@ namespace whi_motion_interface
         }
         else if (module == type_str[WIT_HWT6053_CAN])
         {
-            bool IsRemote = false;
-            bool IsExtended = false;
-            int deviceAddr = 0;
+            node_handle_->declare_parameter<int>("hardware_interface." + hardwareMode + ".baudrate", 500);
+            baudrate = node_handle_->get_parameter("hardware_interface." + hardwareMode + ".baudrate").as_int();
+            node_handle_->declare_parameter<int>("hardware_interface." + hardwareMode + ".pack_length", 11);
+            packLength = node_handle_->get_parameter("hardware_interface." + hardwareMode + ".pack_length").as_int(); 
+            node_handle_->declare_parameter<int>("hardware_interface." + hardwareMode + ".device_addr", 0);
+            int deviceAddr = node_handle_->get_parameter("hardware_interface." + hardwareMode + ".device_addr").as_int(); 
+            node_handle_->declare_parameter<int>("hardware_interface." + hardwareMode + ".is_remote", false);
+            bool isRemote = node_handle_->get_parameter("hardware_interface." + hardwareMode + ".is_remote").as_bool();
+            node_handle_->declare_parameter<int>("hardware_interface." + hardwareMode + ".is_extended", false);
+            bool isExtended = node_handle_->get_parameter("hardware_interface." + hardwareMode + ".is_extended").as_bool();
+
+            node_handle_->declare_parameter<std::vector<int64_t>>("hardware_interface." + hardwareMode + ".reset_yaw",
+                std::vector<int64_t>());
+            auto resetCan = node_handle_->get_parameter("hardware_interface." + hardwareMode + ".reset_yaw").as_integer_array();
+            node_handle_->declare_parameter<std::vector<int64_t>>("hardware_interface." + hardwareMode + ".unlock",
+                std::vector<int64_t>());
+            auto unlockCan = node_handle_->get_parameter("hardware_interface." + hardwareMode + ".unlock").as_integer_array();
             std::shared_ptr<std::vector<int>> canresetList = std::make_shared<std::vector<int>>();
-            std::shared_ptr<std::vector<int>> canunlockList = std::make_shared<std::vector<int>>();    
-
-            node_handle_->param("hardware_interface/" + hardware_mode + "/port", port, std::string("/dev/ttyUSB0"));
-            node_handle_->param("hardware_interface/" + hardware_mode + "/baudrate", baudrate, 500);
-            node_handle_->param("hardware_interface/" + hardware_mode + "/pack_length", packLength, 11);
-            node_handle_->param("hardware_interface/" + hardware_mode + "/device_addr", deviceAddr, 0);
-            node_handle_->param("hardware_interface/" + hardware_mode + "/is_remote", IsRemote, false);
-            node_handle_->param("hardware_interface/" + hardware_mode + "/is_extended", IsExtended, false);
-            node_handle_->getParam("hardware_interface/" + hardware_mode + "/reset_yaw", *canresetList);
-            node_handle_->getParam("hardware_interface/" + hardware_mode + "/unlock", *canunlockList);
-            node_handle_->param("hardware_interface/" + hardware_mode + "/instruction_min_span", instructionMinSpan, 5);
-            node_handle_->param("hardware_interface/" + hardware_mode + "/with_magnetic", withMag, true);
-            node_handle_->param("hardware_interface/" + hardware_mode + "/with_temperature", withTemp, false);
-
-            if (hardware_mode == "usbcan")
+            for (const auto& it : resetCan)
             {
-                int busAddr = 0;
-                node_handle_->param("hardware_interface/" + hardware_mode + "/bus_addr", busAddr, 0);
+                canresetList->push_back(int(it));
+            }
+            std::shared_ptr<std::vector<int>> canunlockList = std::make_shared<std::vector<int>>();
+            for (const auto& it : unlockCan)
+            {
+                canunlockList->push_back(int(it));
+            }
+
+            node_handle_->declare_parameter<int>("hardware_interface." + hardwareMode + ".instruction_min_span", 5);
+            instructionMinSpan = node_handle_->get_parameter("hardware_interface." + hardwareMode + ".instruction_min_span").as_int();
+            node_handle_->declare_parameter<int>("hardware_interface." + hardwareMode + ".with_magnetic", true);
+            withMag = node_handle_->get_parameter("hardware_interface." + hardwareMode + ".with_magnetic").as_bool();
+            node_handle_->declare_parameter<int>("hardware_interface." + hardwareMode + ".with_temperature", false);
+            withTemp = node_handle_->get_parameter("hardware_interface." + hardwareMode + ".with_temperature").as_bool();
+
+            if (hardwareMode == "usbcan")
+            {
+                node_handle_->declare_parameter<int>("hardware_interface." + hardwareMode + ".bus_addr", 0);
+                int busAddr = node_handle_->get_parameter("hardware_interface." + hardwareMode + ".bus_addr").as_int();
+
                 imu_inst_ = std::make_unique<ImuWitUsbcan>(node_handle_, module, busAddr, deviceAddr, baudrate, packLength, 
                     canresetList, canunlockList, instructionMinSpan, withMag, withTemp);
             }
-            else if (hardware_mode == "canbus")
+            else if (hardwareMode == "canbus")
             {
-                std::string busAddr;
-                node_handle_->param("hardware_interface/" + hardware_mode + "/bus_addr", busAddr, std::string("can0"));
+                node_handle_->declare_parameter<std::string>("hardware_interface." + hardwareMode + ".bus_addr",
+                    std::string("can0"));
+                auto busAddr = node_handle_->get_parameter("hardware_interface." + hardwareMode + ".bus_addr").as_string();
+
                 imu_inst_ = std::make_unique<ImuWitCanbus>(node_handle_, module, busAddr, deviceAddr, packLength,
                     canresetList, canunlockList, instructionMinSpan, withMag, withTemp);
             }
@@ -114,42 +150,46 @@ namespace whi_motion_interface
         {
             imu_inst_ = std::make_unique<ImuWit>(node_handle_, module, port, baudrate, packLength, resetList);
         }
-        bool debugYaw;
-        node_handle_->param("debug_yaw", debugYaw, false);
+
+        node_handle_->declare_parameter<bool>("debug_yaw", false);
+        bool debugYaw = node_handle_->get_parameter("debug_yaw").as_bool();
+
         imu_inst_->setPublishParams(frameId, dataTopic, magTopic, tempTopic);
         imu_inst_->init(resetAtInitial);
 		imu_inst_->debugYaw(debugYaw);
 
         // providing the reset service
-        srv_reset_ = std::make_unique<ros::ServiceServer>(node_handle_->advertiseService("imu_reset",
-            &Imu::onServiceReset, this));
+        srv_reset_ = node_handle_->create_service<std_srvs::srv::Trigger>("imu_reset",
+            std::bind(&Imu::onServiceReset, this, std::placeholders::_1, std::placeholders::_2));
 
         // spinner
-        node_handle_->param("loop_hz", loop_hz_, 10.0);
-        ros::Duration updateFreq = ros::Duration(1.0 / loop_hz_);
-        non_realtime_loop_ = std::make_unique<ros::Timer>(node_handle_->createTimer(updateFreq,
-            std::bind(&Imu::update, this, std::placeholders::_1)));
+        node_handle_->declare_parameter<double>("frequency", 10.0);
+        double frequency = node_handle_->get_parameter("frequency").as_double();
+        auto period = std::chrono::duration<double>(1.0 / frequency);
+        non_realtime_loop_ = node_handle_->create_wall_timer(
+            std::chrono::duration_cast<std::chrono::milliseconds>(period),
+            std::bind(&Imu::update, this));
     }
 
-    void Imu::update(const ros::TimerEvent& Event)
+    void Imu::update()
     {
-        elapsed_time_ = ros::Duration(Event.current_real - Event.last_real);
         imu_inst_->read2Publish();
     }
 
-    bool Imu::onServiceReset(std_srvs::Trigger::Request& Req, std_srvs::Trigger::Response& Res)
+    bool Imu::onServiceReset(const std::shared_ptr<std_srvs::srv::Trigger::Request> Request,
+        std::shared_ptr<std_srvs::srv::Trigger::Response> Response)
     {
         if (imu_inst_->reset())
         {
-            Res.success = true;
-            Res.message = "reset succeed";
+            Response->success = true;
+            Response->message = "reset succeed";
         }
         else
         {
-            Res.success = false;
-            Res.message = "failed to reset";
+            Response->success = false;
+            Response->message = "failed to reset";
         }
 
-        return Res.success;
+        return Response->success;
     }
 }
