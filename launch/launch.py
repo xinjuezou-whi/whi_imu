@@ -14,11 +14,10 @@
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch_ros.substitutions import FindPackageShare
 from launch.conditions import IfCondition, UnlessCondition
 from launch_ros.actions import Node
-from ament_index_python.packages import get_package_share_directory
-import os
 
 def generate_launch_description():
     # Declare launch arguments
@@ -26,26 +25,26 @@ def generate_launch_description():
     reset_arg = DeclareLaunchArgument('reset', default_value='false')
 
     # Get config file path
-    config_file = os.path.join(
-        get_package_share_directory('whi_imu'),
+    config_file = PathJoinSubstitution([
+        FindPackageShare('whi_imu'),
         'config',
         'imu_hardware_jy61p.yaml'
-    )
+    ])
 
     # Node definition
-    whi_imu_node = Node(
+    start_whi_imu_node = Node(
         package='whi_imu',
         executable='whi_imu_node',
         name='whi_imu',
-        output='screen',
         parameters=[
             config_file,
             {'reset_z': LaunchConfiguration('reset')}, # always available
-        ]
+        ],
+        output='screen',
     )
 
     return LaunchDescription([
         robot_name_arg,
         reset_arg,
-        whi_imu_node
+        start_whi_imu_node
     ])
