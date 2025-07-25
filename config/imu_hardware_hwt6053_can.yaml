@@ -31,5 +31,4 @@ whi_imu:
         reset_yaw: [0xff, 0xaa, 0x01, 0x04, 0x00]
         instruction_min_span: 5
         with_magnetic: false
-        with_temperature: false      
-    debug_yaw: false
+        with_temperature: false

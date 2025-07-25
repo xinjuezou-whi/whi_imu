@@ -151,12 +151,12 @@ namespace whi_imu
             imu_inst_ = std::make_unique<ImuWit>(node_handle_, module, port, baudrate, packLength, resetList);
         }
 
-        node_handle_->declare_parameter<bool>("debug_yaw", false);
-        bool debugYaw = node_handle_->get_parameter("debug_yaw").as_bool();
+        node_handle_->declare_parameter<bool>("print_yaw", false);
+        bool printYaw = node_handle_->get_parameter("print_yaw").as_bool();
 
         imu_inst_->setPublishParams(frameId, dataTopic, magTopic, tempTopic);
         imu_inst_->init(resetAtInitial);
-		imu_inst_->debugYaw(debugYaw);
+		imu_inst_->printYaw(printYaw);
 
         // providing the reset service
         srv_reset_ = node_handle_->create_service<std_srvs::srv::Trigger>("imu_reset",

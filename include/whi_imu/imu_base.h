@@ -73,7 +73,7 @@ public:
 		}
 	};
 	virtual bool init(bool ResetAtInitial = false) = 0;
-	void debugYaw(bool Flag) { debug_yaw_ = Flag; };
+	void printYaw(bool Flag) { print_yaw_ = Flag; };
 	virtual void read2Publish() = 0;
 	virtual bool reset() = 0;
 
@@ -89,5 +89,5 @@ protected:
 	bool with_magnetic_{ true };
 	bool with_temperature_{ true };
 	bool reset_{ false };
-	bool debug_yaw_{ false };
+	bool print_yaw_{ false };
 };

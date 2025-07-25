@@ -211,7 +211,7 @@ void ImuWitUsbcan::threadReadCan()
 					{
 						angle_.y = float((int)val.data_[7] << 24 | (int)val.data_[6] << 16 | (int)val.data_[5] << 8 | (int)val.data_[4]) / 1000.0;
 						anglepack |= 0x100;
-						if (debug_yaw_)
+						if (print_yaw_)
 						{
 							std::cout << "yaw: " << std::fixed << std::setprecision(2) << angle_.y << std::endl;
 						}

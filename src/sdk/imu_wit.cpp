@@ -266,7 +266,7 @@ void ImuWit::fetchData(unsigned char* Data, size_t Length)
 			angle_.p = raw[1] * CONSTANT_ANGLE;
 			angle_.y = raw[2] * CONSTANT_ANGLE;
 
-			if (debug_yaw_)
+			if (print_yaw_)
 			{
 				std::cout << "yaw: " << std::fixed << std::setprecision(2) << angle_.y << std::endl;
 			}

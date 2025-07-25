@@ -213,7 +213,7 @@ void ImuWitCanbus::threadReadCan()
 					{
 						angle_.y = float((int)read[7] << 24 | (int)read[6] << 16 | (int)read[5] << 8 | (int)read[4]) * CONSTANT_ANGLE;
 						anglepack |= 0x100;
-						if (debug_yaw_)
+						if (print_yaw_)
 						{
 							std::cout << "yaw: " << std::fixed << std::setprecision(2) << angle_.y << std::endl;
 						}

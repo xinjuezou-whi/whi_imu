@@ -23,6 +23,7 @@ def generate_launch_description():
     # Declare launch arguments
     robot_name_arg = DeclareLaunchArgument('robot_name', default_value='')
     reset_arg = DeclareLaunchArgument('reset', default_value='false')
+    print_yaw_arg = DeclareLaunchArgument('print_yaw', default_value='false')
 
     # Get config file path
     config_file = PathJoinSubstitution([
@@ -38,7 +39,8 @@ def generate_launch_description():
         name='whi_imu',
         parameters=[
             config_file,
-            {'reset_z': LaunchConfiguration('reset')}, # always available
+            {'reset_z': LaunchConfiguration('reset')}, # always available,
+            {'print_yaw': LaunchConfiguration('print_yaw')}
         ],
         output='screen',
     )
@@ -46,5 +48,6 @@ def generate_launch_description():
     return LaunchDescription([
         robot_name_arg,
         reset_arg,
+        print_yaw_arg,
         start_whi_imu_node
     ])
