@@ -71,16 +71,16 @@ It advertises the service "imu_reset" for resetting the yaw, which is helpful at
 Launch the whi_imu node with commands:
 ```
 cd ~/catkin_workspace/
-roslaunch whi_imu launch.py
+ros2 launch whi_imu launch.py
 ```
 Or with a reset flag to set yaw as zero:
 ```
-roslaunch whi_imu launch.py reset:=true
+ros2 launch whi_imu launch.py reset:=true
 ```
 
 Then in another terminal, use the rostopic command to check its outputs:
 ```
-rostopic echo /imu_data
+ros2 topic echo /imu_data
 ```
 
 ![imu](https://user-images.githubusercontent.com/72239958/205224541-0f30e5e7-d1aa-4db5-af34-10e4fe3ce7f2.gif)
