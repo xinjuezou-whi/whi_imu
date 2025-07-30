@@ -3,7 +3,7 @@
 <package format="3">
   <name>whi_imu</name>
   <version>2.10.1</version>
-  <description>TODO: Package description</description>
+  <description>The whi_imu package</description>
   <maintainer email="xinjue.zou.whi@gmail.com">Xinjue</maintainer>
   <license>Apache 2.0</license>
 
