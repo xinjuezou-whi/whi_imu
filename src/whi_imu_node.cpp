@@ -13,7 +13,7 @@ All text above must be included in any redistribution.
 
 Changelog:
 2022-04-04: Initial version
-2025-07-20: Migrate from ROS 1
+2025-07-25: Migrate from ROS 1 by Yuhang Su
 2025-xx-xx: xxx
 ******************************************************************/
 #include <iostream>
