@@ -1,7 +1,6 @@
 #!/bin/bash
-cd ${HOME}/catkin_workspace/
+cd ${HOME}/ros2_ws/
 source /opt/ros/${ROS_DISTRO}/setup.bash
-source ${HOME}/catkin_workspace/devel/setup.bash
+source ${HOME}/ros2_ws/install/setup.bash
 echo "launching application, please wait..."
-roslaunch whi_imu whi_imu_ns.launch robot_name:=whi
-
+ros2 launch whi_imu launch.py robot_name:='whi'
