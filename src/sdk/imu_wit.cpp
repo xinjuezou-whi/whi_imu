@@ -114,7 +114,7 @@ void ImuWit::read2Publish()
 			imuData.angular_velocity.x = gyro_.x;
 			imuData.angular_velocity.y = gyro_.y;
 			imuData.angular_velocity.z = gyro_.z;
-			imuData.linear_acceleration_covariance = { 1e-6, 0, 0, 0, 1e-6, 0, 0, 0, 1e-6 };
+			imuData.angular_velocity_covariance = { 1e-6, 0, 0, 0, 1e-6, 0, 0, 0, 1e-6 };
 
 			// JY-61/61P, JY-901 have no quartnion output
 			if (module_.find("61") != std::string::npos ||
