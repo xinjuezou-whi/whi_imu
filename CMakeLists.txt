@@ -25,6 +25,10 @@ find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(serial REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(angles REQUIRED)
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
@@ -52,6 +56,10 @@ ament_target_dependencies(${PROJECT_NAME}
   sensor_msgs
   std_srvs
   serial
+  tf2 
+  tf2_ros 
+  tf2_geometry_msgs
+  angles  
 )
 
 add_executable(${PROJECT_NAME}_node src/${PROJECT_NAME}_node.cpp)
