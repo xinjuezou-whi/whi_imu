@@ -5,6 +5,7 @@ This package is the hardware driver of IMU for ROS. It currently supports the JY
 The products relying on serial to communicate need serial package. This package leverages the serial package of ROS, so please first install it with the following commands:
 ```
 git clone https://github.com/xinjuezou-whi/serial.git
+git clone https://github.com/xinjuezou-whi/whi_interfaces.git
 ```
 
 ## Build Up
@@ -17,7 +18,7 @@ git clone https://github.com/xinjuezou-whi/whi_imu.git
 Build the package:
 ```
 cd ..
-catkin build
+colcon build --symlink-install --packages-select whi_imu
 source ~/catkin_workspace/devel/setup.bash
 ```
 
