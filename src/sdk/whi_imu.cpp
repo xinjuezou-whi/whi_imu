@@ -151,6 +151,11 @@ namespace whi_imu
             imu_inst_ = std::make_unique<ImuWit>(node_handle_, module, port, baudrate, packLength, resetList);
         }
 
+        // state publisher
+        pub_state_ = node_handle_->create_publisher<whi_interfaces::msg::WhiState>("whi_state", 10);
+        state_msg_.hardware_id = "whi_imu";
+        state_msg_.values.push_back(diagnostic_msgs::msg::KeyValue());
+
         node_handle_->declare_parameter<bool>("print_yaw", false);
         bool printYaw = node_handle_->get_parameter("print_yaw").as_bool();
 
@@ -174,6 +179,20 @@ namespace whi_imu
     void Imu::update()
     {
         imu_inst_->read2Publish();
+
+        auto current = node_handle_->get_clock()->now();
+        static auto last = current;
+        if ((current - last).seconds() > 0.2)
+        {
+            state_msg_.header.stamp = node_handle_->get_clock()->now();
+            state_msg_.level = whi_interfaces::msg::WhiState::INFO;
+            state_msg_.values.back().key = "state";
+            state_msg_.values.back().value = "running";
+        
+            pub_state_->publish(state_msg_);
+
+            last = current;
+        }
     }
 
     bool Imu::onServiceReset(const std::shared_ptr<std_srvs::srv::Trigger::Request> Request,

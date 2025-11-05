@@ -21,6 +21,7 @@ Changelog:
 #include <memory>
 
 #include "imu_base.h"
+#include "whi_interfaces/msg/whi_state.hpp"
 
 namespace whi_imu
 {
@@ -45,5 +46,7 @@ namespace whi_imu
         rclcpp::TimerBase::SharedPtr non_realtime_loop_{ nullptr };
         std::unique_ptr<ImuBase> imu_inst_{ nullptr };
         rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_reset_{ nullptr };
+        rclcpp::Publisher<whi_interfaces::msg::WhiState>::SharedPtr pub_state_{ nullptr };
+        whi_interfaces::msg::WhiState state_msg_;
 	};
 }
