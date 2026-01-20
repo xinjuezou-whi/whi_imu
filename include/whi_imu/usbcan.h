@@ -28,6 +28,7 @@ Changelog:
 #include <array>
 #include <map>
 #include <mutex>
+#include <string>
 
 class UsbCan
 {
