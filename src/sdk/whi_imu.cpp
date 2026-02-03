@@ -99,9 +99,9 @@ namespace whi_imu
             packLength = node_handle_->get_parameter("hardware_interface." + hardwareMode + ".pack_length").as_int(); 
             node_handle_->declare_parameter<int>("hardware_interface." + hardwareMode + ".device_addr", 0);
             int deviceAddr = node_handle_->get_parameter("hardware_interface." + hardwareMode + ".device_addr").as_int(); 
-            node_handle_->declare_parameter<int>("hardware_interface." + hardwareMode + ".is_remote", false);
+            node_handle_->declare_parameter<bool>("hardware_interface." + hardwareMode + ".is_remote", false);
             bool isRemote = node_handle_->get_parameter("hardware_interface." + hardwareMode + ".is_remote").as_bool();
-            node_handle_->declare_parameter<int>("hardware_interface." + hardwareMode + ".is_extended", false);
+            node_handle_->declare_parameter<bool>("hardware_interface." + hardwareMode + ".is_extended", false);
             bool isExtended = node_handle_->get_parameter("hardware_interface." + hardwareMode + ".is_extended").as_bool();
 
             node_handle_->declare_parameter<std::vector<int64_t>>("hardware_interface." + hardwareMode + ".reset_yaw",
@@ -123,9 +123,9 @@ namespace whi_imu
 
             node_handle_->declare_parameter<int>("hardware_interface." + hardwareMode + ".instruction_min_span", 5);
             instructionMinSpan = node_handle_->get_parameter("hardware_interface." + hardwareMode + ".instruction_min_span").as_int();
-            node_handle_->declare_parameter<int>("hardware_interface." + hardwareMode + ".with_magnetic", true);
+            node_handle_->declare_parameter<bool>("hardware_interface." + hardwareMode + ".with_magnetic", true);
             withMag = node_handle_->get_parameter("hardware_interface." + hardwareMode + ".with_magnetic").as_bool();
-            node_handle_->declare_parameter<int>("hardware_interface." + hardwareMode + ".with_temperature", false);
+            node_handle_->declare_parameter<bool>("hardware_interface." + hardwareMode + ".with_temperature", false);
             withTemp = node_handle_->get_parameter("hardware_interface." + hardwareMode + ".with_temperature").as_bool();
 
             if (hardwareMode == "usbcan")
