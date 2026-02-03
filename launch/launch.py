@@ -18,12 +18,17 @@ from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 from launch.conditions import IfCondition, UnlessCondition
 from launch_ros.actions import Node
+from launch_ros.descriptions import ParameterFile
+from nav2_common.launch import RewrittenYaml
 
 def generate_launch_description():
+    # Input parameters declaration
+    namespace = LaunchConfiguration('namespace')
+
     # Declare launch arguments
-    robot_name_arg = DeclareLaunchArgument('robot_name', default_value='')
-    reset_arg = DeclareLaunchArgument('reset', default_value='false')
-    print_yaw_arg = DeclareLaunchArgument('print_yaw', default_value='false')
+    declare_namespace_arg = DeclareLaunchArgument('namespace', default_value='', description='Top-level namespace')
+    declare_reset_arg = DeclareLaunchArgument('reset', default_value='false')
+    declare_print_yaw_arg = DeclareLaunchArgument('print_yaw', default_value='false')
 
     # Get config file path
     config_file = PathJoinSubstitution([
@@ -32,13 +37,24 @@ def generate_launch_description():
         'imu_hardware_jy61p.yaml'
     ])
 
+    configured_params = ParameterFile(
+        RewrittenYaml(
+            source_file=config_file,
+            root_key=namespace,
+            param_rewrites={},
+            convert_types=True,
+        ),
+        allow_substs=True,
+    )
+
     # Node definition
     start_whi_imu_node = Node(
         package='whi_imu',
         executable='whi_imu_node',
         name='whi_imu',
+        namespace=namespace,
         parameters=[
-            config_file,
+            configured_params,
             {'reset_z': LaunchConfiguration('reset')}, # always available,
             {'print_yaw': LaunchConfiguration('print_yaw')}
         ],
@@ -46,8 +62,8 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        robot_name_arg,
-        reset_arg,
-        print_yaw_arg,
+        declare_namespace_arg,
+        declare_reset_arg,
+        declare_print_yaw_arg,
         start_whi_imu_node
     ])
