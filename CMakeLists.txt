@@ -43,7 +43,8 @@ file(GLOB WHI_SDK_SRC
 )
 ## Define third party link directory
 link_directories(
-  ${CMAKE_CURRENT_SOURCE_DIR}/3rd_lib/controlcan/64bit
+  ${CMAKE_CURRENT_SOURCE_DIR}/3rd_lib/controlcan/64bit # arm64
+  # ${CMAKE_CURRENT_SOURCE_DIR}/3rd_lib/controlcan/64bit/x86 # amd64
 )
 add_library(${PROJECT_NAME} ${WHI_SDK_SRC})
 ## Link to the third party libraries
@@ -74,11 +75,17 @@ install(TARGETS
   ${PROJECT_NAME}_node
   DESTINATION lib/${PROJECT_NAME}
 )
+# arm64
 install(
-  DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/3rd_lib/controlcan/64bit/
+  DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/3rd_lib/controlcan/64bit
   DESTINATION lib
   FILES_MATCHING PATTERN "*.so"
 )
+# amd64
+# install(
+#   FILES ${CMAKE_CURRENT_SOURCE_DIR}/3rd_lib/controlcan/64bit/x86/libcontrolcan.so
+#   DESTINATION lib
+# )
 install(
   DIRECTORY config launch
   DESTINATION share/${PROJECT_NAME}
